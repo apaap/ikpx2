@@ -4,11 +4,15 @@ set -x
 
 git submodule update --init --recursive
 
+if [ -f "kissat/build/libkissat.a" ]; then
+echo "libkissat.a already detected"
+else
 cd kissat
 ./configure --extreme --sat
 cd build
 make libkissat.a
 cd ../..
+fi
 
 g++ -O3 -Lkissat/build src/main.cpp -lkissat -o ikpx2
 
