@@ -1,3 +1,6 @@
 [submodule "kissat"]
 	path = kissat
 	url = https://github.com/arminbiere/kissat.git
+[submodule "lifelib"]
+	path = lifelib
+	url = https://gitlab.com/apgoucher/lifelib.git
