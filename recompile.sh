@@ -6,7 +6,10 @@ git submodule update --init --recursive
 
 cd kissat
 ./configure --extreme --sat
-make
-cd -
+cd build
+make libkissat.a
+cd ../..
+
+g++ -O3 -Lkissat/build src/main.cpp -lkissat -o ikpx2
 
 printf "\n\033[32;1m **** build process completed successfully **** \033[0m\n"
