@@ -67,6 +67,11 @@ void check_sat_solver() {
 
     auto paley = ramsey4(17);
 
+    if (paley.size() != 137) {
+        std::cerr << "Error: incorrect number of literals" << std::endl;
+        exit(1);
+    }
+
     int degrees[17] = {0};
 
     for (int a = 0; a < 17; a++) {
