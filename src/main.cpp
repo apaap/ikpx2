@@ -1,5 +1,3 @@
-#include <vector>
-
 #include "../lifelib/pattern2.h"
 #include "lattice.hpp"
 #include "isosat.hpp"
@@ -43,8 +41,10 @@ int main() {
     auto prime_implicants = truth_table_to_prime_implicants(truth_table);
     int npi = prime_implicants.size();
 
-    std::cout << "ikpx2 has been compiled for the rule\033[32;1m " << rule;
-    std::cout << " \033[0m(" << npi << " prime implicants).\n" << std::endl;
+    std::cerr << "ikpx2 has been compiled for the rule\033[32;1m " << rule;
+    std::cerr << " \033[0m(" << npi << " prime implicants).\n" << std::endl;
+
+    check_sat_solver();
 
     return 0;
 
