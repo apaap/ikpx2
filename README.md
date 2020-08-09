@@ -5,9 +5,9 @@ responsible for the [discovery of Sir Robin][1].
 
 ![](docs/logo.png)
 
-The main differences between `ikpx 2.0` and the original `ikpx` are:
+The main differences between `ikpx2` and the original `ikpx` are:
 
- - Uses a better SAT solver (Armin Biere's _kissat_);
+ - Uses a better SAT solver (Armin Biere's [Kissat][2]);
  - Runs in a single multithreaded process, so no communication overhead;
  - Supports arbitrary isotropic rules, not just B3/S23;
  - Incorporates symmetry when searching orthogonal velocities;
@@ -18,3 +18,4 @@ Moreover, as there is no Python interpreter involved at runtime, the
 program is much more efficient in terms of speed and memory usage.
 
 [1]: https://cp4space.wordpress.com/2018/03/11/a-rather-satisfying-winter/
+[2]: https://github.com/arminbiere/kissat
