@@ -4,6 +4,8 @@ extern "C" {
 #include "../kissat/src/kissat.h"
 }
 
+#include "../lifelib/pattern2.h"
+
 std::vector<int> solve_using_kissat(const std::vector<int> &cnf, int literals_to_return, int max_decisions=10000000) {
 
     auto solver = kissat_init();
