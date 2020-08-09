@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../lifelib/hashtrees/numtheory.h"
-
+#include <iostream>
 
 int signedinc(int x) {
     if (x == 0) {
@@ -17,6 +17,26 @@ int signedinc(int x) {
 std::vector<int> get_transformation(int vd, int hd, int p) {
 
     int vdp = apg::euclid_gcd(vd, p);
+
+    if (apg::euclid_gcd(vdp, hd) != 1) {
+        std::cerr << "Error: vertical displacement, horizontal displacement, and period must be coprime" << std::endl;
+        exit(1);
+    }
+
+    if ((p <= 0) || (vd <= 0)) {
+        std::cerr << "Error: vertical displacement and period must be positive" << std::endl;
+        exit(1);
+    }
+
+    if (hd < 0) {
+        std::cerr << "Error: horizontal displacement must be nonnegative" << std::endl;
+        exit(1);
+    }
+
+    if (hd > vd) {
+        std::cerr << "Error: horizontal displacement cannot exceed vertical displacement" << std::endl;
+        exit(1);
+    }
 
     int du_dx =  vd / apg::euclid_gcd(vd, hd);
     int du_dy = -hd / apg::euclid_gcd(vd, hd);
