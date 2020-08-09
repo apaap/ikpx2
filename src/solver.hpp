@@ -61,6 +61,14 @@ std::vector<int> ramsey4(int N) {
 
 }
 
+/**
+ * Checks the speed and correctness of the SAT solver by requesting it to
+ * find a red/blue colouring of the edges of a complete graph K_17 such
+ * that there is no monochromatic K_4 subgraph.
+ *
+ * It is known that there is a unique solution up to isomorphism, namely
+ * the 17-vertex Paley graph.
+ */
 void check_sat_solver() {
 
     std::cerr << "Checking SAT solver..." << std::endl;
