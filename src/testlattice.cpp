@@ -1,11 +1,12 @@
 #include "lattice.hpp"
 #include <stdio.h>
 
-void print_transformation(int vd, int hd, int p) {
+void print_transformation(const char* v) {
 
-    printf("(%d, %d)c/%d : ", vd, hd, p);
+    Velocity vel(v);
+    auto vec = vel.jacobian;
 
-    auto vec = get_transformation(vd, hd, p);
+    printf("%s : (%d, %d, %d) : ", v, vel.vd, vel.hd, vel.p);
 
     printf("[(%d, %d), (%d, %d), (%d, %d)]\n",
         vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
@@ -16,61 +17,40 @@ int main(int argc, char* argv[]) {
 
     (void) argc; (void) argv;
 
-    print_transformation(1, 0, 2);
+    print_transformation("c/2");
     printf("\n");
-    print_transformation(1, 0, 3);
+    print_transformation("c/3");
     printf("\n");
-    print_transformation(1, 0, 4);
-    print_transformation(1, 1, 4);
+    print_transformation("c/4o");
+    print_transformation("c/4d");
     printf("\n");
-    print_transformation(1, 0, 5);
-    print_transformation(2, 0, 5);
-    print_transformation(1, 1, 5);
+    print_transformation("c/5o");
+    print_transformation("2c/5");
+    print_transformation("c/5d");
     printf("\n");
-    print_transformation(1, 0, 6);
-    print_transformation(1, 1, 6);
-    print_transformation(2, 1, 6);
+    print_transformation("c/6o");
+    print_transformation("c/6d");
+    print_transformation("(2,1)c/6");
     printf("\n");
-    print_transformation(1, 0, 7);
-    print_transformation(2, 0, 7);
-    print_transformation(3, 0, 7);
-    print_transformation(1, 1, 7);
-    print_transformation(2, 1, 7);
+    print_transformation("c/7");
+    print_transformation("2c/7");
+    print_transformation("3c/7");
+    print_transformation("c/7d");
+    print_transformation("(2,1)c/7");
     printf("\n");
-    print_transformation(1, 0, 8);
-    print_transformation(3, 0, 8);
-    print_transformation(1, 1, 8);
-    print_transformation(2, 1, 8);
-    print_transformation(3, 1, 8);
+    print_transformation("c/8");
+    print_transformation("3c/8");
+    print_transformation("c/8d");
+    print_transformation("(2,1)c/8");
+    print_transformation("(3,1)c/8");
     printf("\n");
-    print_transformation(1, 0, 9);
-    print_transformation(2, 0, 9);
-    print_transformation(4, 0, 9);
-    print_transformation(1, 1, 9);
-    print_transformation(2, 1, 9);
-    print_transformation(3, 1, 9);
-    print_transformation(2, 2, 9);
-    printf("\n");
-    print_transformation(1, 0, 10);
-    print_transformation(3, 0, 10);
-    print_transformation(1, 1, 10);
-    print_transformation(2, 1, 10);
-    print_transformation(3, 1, 10);
-    print_transformation(4, 1, 10);
-    print_transformation(3, 2, 10);
-    printf("\n");
-    print_transformation(1, 0, 11);
-    print_transformation(2, 0, 11);
-    print_transformation(3, 0, 11);
-    print_transformation(4, 0, 11);
-    print_transformation(5, 0, 11);
-    print_transformation(6, 0, 11);
-    print_transformation(1, 1, 11);
-    print_transformation(2, 1, 11);
-    print_transformation(3, 1, 11);
-    print_transformation(4, 1, 11);
-    print_transformation(2, 2, 11);
-    print_transformation(3, 2, 11);
+    print_transformation("c/9");
+    print_transformation("2c/9");
+    print_transformation("4c/9");
+    print_transformation("c/9d");
+    print_transformation("(2,1)c/9");
+    print_transformation("(3,1)c/9");
+    print_transformation("2c/9d");
 
     return 0;
 

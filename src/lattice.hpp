@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../lifelib/hashtrees/numtheory.h"
+#include "../lifelib/ssplit.h"
 #include <iostream>
 #include <cmath>
 
@@ -78,8 +79,33 @@ int calculate_padding(int ddy, int ddx, int ddt) {
 struct Velocity {
 
     std::vector<int> jacobian;
+    int vd; int hd; int p;
 
-    Velocity(int vd, int hd, int p) {
+    Velocity(const std::string &velocity) {
+
+        bool diagonal = (velocity.find("d") != std::string::npos);
+        std::vector<int64_t> ints;
+
+        {
+            std::istringstream str(velocity);
+            apg::onlyints(ints, str);
+
+            if ((ints.size() != 1) && (ints.size() != 2) && (ints.size() != 3)) {
+                std::cerr << "Incomprehensible velocity string: " << velocity << std::endl;
+                exit(1);
+            }
+        }
+
+        vd = (ints.size() == 1) ? 1 : ints[0];
+        hd = 0;
+        p = ints[ints.size() - 1];
+
+        if (ints.size() == 3) {
+            hd = ints[1];
+        } else if (diagonal) {
+            hd = vd;
+        }
+
         jacobian = get_transformation(vd, hd, p);
     }
 
