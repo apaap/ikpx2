@@ -7,9 +7,9 @@
 #include "banner.hpp"
 
 
-std::vector<int> prime_implicants_for_rule(apg::lifetree_abstract<uint32_t> *lab, std::string rule) {
+std::vector<int> truth_table_for_rule(apg::lifetree_abstract<uint32_t> *lab, std::string rule) {
 
-    int truthtab[1024];
+    std::vector<int> truthtab;
 
     apg::pattern cell(lab, "o!", rule);
     for (int i = 0; i < 512; i++) {
@@ -23,12 +23,10 @@ std::vector<int> prime_implicants_for_rule(apg::lifetree_abstract<uint32_t> *lab
             }
         }
 
-        int islive = x[1].getcell(1, 1);
-        truthtab[i] = 1 - islive;
-        truthtab[i + 512] = islive;
+        truthtab.push_back(x[1].getcell(1, 1));
     }
 
-    return get_prime_implicants(truthtab, 10);
+    return truthtab;
 
 }
 
@@ -40,8 +38,9 @@ int main() {
     auto rvec = apg::get_all_rules();
     std::string rule = rvec[0];
     apg::lifetree<uint32_t, 1> lt(1000);
-    auto prime_implicants = prime_implicants_for_rule(&lt, rule);
 
+    auto truth_table = truth_table_for_rule(&lt, rule);
+    auto prime_implicants = truth_table_to_prime_implicants(truth_table);
     int npi = prime_implicants.size();
 
     std::cout << "ikpx2 has been compiled for the rule\033[32;1m " << rule;

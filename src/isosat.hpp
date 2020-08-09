@@ -82,3 +82,16 @@ std::vector<int> get_prime_implicants(const int* truthtab, int depth) {
 
     return result;
 }
+
+std::vector<int> truth_table_to_prime_implicants(std::vector<int> &truth_table) {
+
+    int truthtab[1024];
+
+    for (int i = 0; i < 512; i++) {
+        int islive = truth_table[i];
+        truthtab[i] = 1 - islive;
+        truthtab[i + 512] = islive;
+    }
+
+    return get_prime_implicants(truthtab, 10);
+}
