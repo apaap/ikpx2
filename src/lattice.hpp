@@ -2,6 +2,8 @@
 
 #include "../lifelib/hashtrees/numtheory.h"
 #include <iostream>
+#include <cmath>
+
 
 int signedinc(int x) {
     if (x == 0) {
@@ -67,3 +69,27 @@ std::vector<int> get_transformation(int vd, int hd, int p) {
                 0, dv_dt};
 
 }
+
+int calculate_padding(int ddy, int ddx, int ddt) {
+    int l = std::abs(ddx) + std::abs(ddy);
+    return l + std::max(l, std::abs(ddt));
+}
+
+struct Velocity {
+
+    std::vector<int> jacobian;
+
+    Velocity(int vd, int hd, int p) {
+        jacobian = get_transformation(vd, hd, p);
+    }
+
+    int horizontal_padding() {
+        return calculate_padding(jacobian[0], jacobian[2], jacobian[4]);
+    }
+
+    int tuple_length() {
+        return calculate_padding(jacobian[1], jacobian[3], jacobian[5]);
+    }
+
+};
+
