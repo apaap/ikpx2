@@ -95,3 +95,21 @@ std::vector<int> truth_table_to_prime_implicants(std::vector<int> &truth_table) 
 
     return get_prime_implicants(truthtab, 10);
 }
+
+/**
+ * Append clauses to a CNF corresponding to a napkin.
+ */
+void include_pi(std::vector<int> &cnf, const std::vector<int> &prime_implicants, const std::vector<int> &vars) {
+
+    for (auto&& x : prime_implicants) {
+        for (size_t i = 0; i < vars.size(); i++) {
+            int v = (x >> (i*2)) & 3;
+            if (v == 1) {
+                cnf.push_back(-vars[i]);
+            } else if (v == 2) {
+                cnf.push_back(vars[i]);
+            }
+        }
+        cnf.push_back(0);
+    }
+}
