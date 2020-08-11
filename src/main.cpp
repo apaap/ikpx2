@@ -1,32 +1,8 @@
-#include "../lifelib/pattern2.h"
-#include "lattice.hpp"
 #include "isosat.hpp"
 #include "solver.hpp"
 #include "banner.hpp"
+#include "gollat.hpp"
 
-
-std::vector<int> truth_table_for_rule(apg::lifetree_abstract<uint32_t> *lab, std::string rule) {
-
-    std::vector<int> truthtab;
-
-    apg::pattern cell(lab, "o!", rule);
-    for (int i = 0; i < 512; i++) {
-        apg::pattern x(lab, "", rule);
-
-        for (int j = 0; j < 3; j++) {
-            for (int k = 0; k < 3; k++) {
-                if ((i >> (3*j+k)) & 1) {
-                    x += cell(j, k);
-                }
-            }
-        }
-
-        truthtab.push_back(x[1].getcell(1, 1));
-    }
-
-    return truthtab;
-
-}
 
 
 int main() {
@@ -45,6 +21,12 @@ int main() {
     std::cerr << " \033[0m(" << npi << " prime implicants).\n" << std::endl;
 
     check_sat_solver();
+
+    apg::pattern robin(&lt, "docs/sirrobin.rle");
+    Velocity vel("(2,1)c/6");
+    apg::pattern ikpx = ltransform(robin, vel);
+
+    ikpx.write_rle(std::cerr);
 
     return 0;
 
