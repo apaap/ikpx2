@@ -49,6 +49,12 @@ apg::pattern ltransform(apg::pattern &x, const Velocity &vel) {
         y = y[1];
     }
 
+    if (ikpx.nonempty()) {
+        int64_t bbox[4];
+        ikpx.getrect(bbox);
+        ikpx = ikpx.shift(0 - bbox[0], 0 - bbox[1]);
+    }
+
     return ikpx;
 
 }
