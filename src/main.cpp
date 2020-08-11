@@ -24,9 +24,9 @@ int main() {
 
     apg::pattern robin(&lt, "docs/sirrobin.rle");
     Velocity vel("(2,1)c/6");
-    apg::pattern ikpx = ltransform(robin, vel);
+    auto things = ltransform(robin, vel);
 
-    ikpx.write_rle(std::cerr);
+    std::cerr << things[0].totalPopulation() << " cells; " << things[1].totalPopulation() << " errors." << std::endl;
 
     return 0;
 
