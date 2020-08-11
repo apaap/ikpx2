@@ -22,11 +22,12 @@ int main() {
 
     check_sat_solver();
 
-    apg::pattern robin(&lt, "docs/sirrobin.rle");
+    apg::pattern robin(&lt, "docs/almost.rle");
     Velocity vel("(2,1)c/6");
-    auto things = ltransform(robin, vel);
+    std::vector<uint64_t> results;
+    int n7 = ltransform(robin, vel, results);
 
-    std::cerr << things[0].totalPopulation() << " cells; " << things[1].totalPopulation() << " errors." << std::endl;
+    std::cerr << "n7 = " << n7 << std::endl;
 
     return 0;
 
