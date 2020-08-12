@@ -1,7 +1,7 @@
 #include "isosat.hpp"
 #include "solver.hpp"
 #include "banner.hpp"
-#include "gollat.hpp"
+#include "ikpxtree.hpp"
 
 
 
@@ -28,6 +28,19 @@ int main() {
     int n7 = ltransform(robin, vel, results);
 
     std::cerr << "n7 = " << n7 << std::endl;
+
+    ikpxtree tree(n7 - 1);
+
+    u64seq t;
+
+    for (uint64_t i = 0; i < results.size(); i += n7) {
+        auto lower_t = tree.inject(&(results[i]));
+        if (lower_t.size()) { t = lower_t; }
+    }
+
+    auto pat = tree.materialise(&lt, t.data());
+    pat.write_rle(std::cerr);
+    
 
     return 0;
 

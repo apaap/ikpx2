@@ -3,7 +3,9 @@
 #include "../lifelib/pattern2.h"
 #include "lattice.hpp"
 
-std::vector<int> truth_table_for_rule(apg::lifetree_abstract<uint32_t> *lab, std::string rule) {
+typedef apg::lifetree_abstract<uint32_t> lab32_t;
+
+std::vector<int> truth_table_for_rule(lab32_t *lab, std::string rule) {
 
     std::vector<int> truthtab;
 
@@ -26,13 +28,11 @@ std::vector<int> truth_table_for_rule(apg::lifetree_abstract<uint32_t> *lab, std
 }
 
 
-int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint64_t> &results) {
+apg::pattern golly2ikpx(apg::pattern &x, const Velocity &vel) {
 
     apg::pattern y = x;
     apg::pattern ikpx(y.getlab(), "", y.getrule());
     apg::pattern onecell(y.getlab(), "o!", y.getrule());
-
-    std::vector<int> truthtab = truth_table_for_rule(y.getlab(), y.getrule());
 
     for (int t = 0; t < vel.p; t++) {
 
@@ -51,8 +51,17 @@ int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint64_t> &resu
         y = y[1];
     }
 
-    int hradius = std::abs(vel.jacobian[0]) + std::abs(vel.jacobian[2]);
-    int vradius = std::abs(vel.jacobian[1]) + std::abs(vel.jacobian[3]);
+    return ikpx;
+}
+
+
+int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint64_t> &results) {
+
+    apg::pattern ikpx = golly2ikpx(x, vel);
+    std::vector<int> truthtab = truth_table_for_rule(x.getlab(), x.getrule());
+
+    int hradius = vel.hradius();
+    int vradius = vel.vradius();
 
     if (ikpx.nonempty()) {
 

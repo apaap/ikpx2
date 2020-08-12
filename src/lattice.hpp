@@ -71,11 +71,6 @@ std::vector<int> get_transformation(int vd, int hd, int p) {
 
 }
 
-int calculate_padding(int ddy, int ddx, int ddt) {
-    int l = std::abs(ddx) + std::abs(ddy);
-    return l + std::max(l, std::abs(ddt));
-}
-
 struct Velocity {
 
     std::vector<int> jacobian;
@@ -109,12 +104,12 @@ struct Velocity {
         jacobian = get_transformation(vd, hd, p);
     }
 
-    int horizontal_padding() {
-        return calculate_padding(jacobian[0], jacobian[2], jacobian[4]);
+    int hradius() const {
+        return std::abs(jacobian[0]) + std::abs(jacobian[2]);
     }
 
-    int tuple_length() {
-        return calculate_padding(jacobian[1], jacobian[3], jacobian[5]);
+    int vradius() const {
+        return std::abs(jacobian[1]) + std::abs(jacobian[3]);
     }
 
 };
