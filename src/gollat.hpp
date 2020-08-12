@@ -55,6 +55,31 @@ apg::pattern golly2ikpx(apg::pattern &x, const Velocity &vel) {
 }
 
 
+apg::pattern ikpx2golly(apg::pattern &x, const Velocity &vel) {
+
+    int pop = x.totalPopulation();
+    std::vector<int64_t> coords(pop*2);
+    x.get_coords(coords.data());
+
+    apg::pattern golly(x.getlab(), "", x.getrule());
+    apg::pattern onecell(x.getlab(), "o!", x.getrule());
+
+    for (int j = 0; j < pop; j++) {
+        int ou = coords[2*j];
+        int ov = coords[2*j+1];
+
+        int oy = vel.iacobjan[0] * ou + vel.iacobjan[2] * ov;
+        int ox = vel.iacobjan[1] * ou + vel.iacobjan[3] * ov;
+
+        if ((ox % vel.det == 0) && (oy % vel.det == 0)) {
+            golly += onecell(ox / vel.det, oy / vel.det);
+        }
+    }
+
+    return golly;
+}
+
+
 int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint64_t> &results) {
 
     apg::pattern ikpx = golly2ikpx(x, vel);

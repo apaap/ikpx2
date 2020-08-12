@@ -17,6 +17,27 @@ int signedinc(int x) {
 }
 
 
+int inv2x2(const std::vector<int> &M, std::vector<int> &N) {
+
+    int det = M[0] * M[3] - M[1] * M[2];
+
+    N.clear();
+    N.push_back(M[3]);
+    N.push_back(-M[1]);
+    N.push_back(-M[2]);
+    N.push_back(M[0]);
+
+    if (det < 0) {
+        det = -det;
+        for (int i = 0; i < 4; i++) {
+            N[i] = -N[i];
+        }
+    }
+
+    return det;
+}
+
+
 std::vector<int> get_transformation(int vd, int hd, int p) {
 
     int vdp = apg::euclid_gcd(vd, p);
@@ -74,7 +95,8 @@ std::vector<int> get_transformation(int vd, int hd, int p) {
 struct Velocity {
 
     std::vector<int> jacobian;
-    int vd; int hd; int p;
+    std::vector<int> iacobjan;
+    int vd; int hd; int p; int det;
 
     Velocity(const std::string &velocity) {
 
@@ -102,6 +124,7 @@ struct Velocity {
         }
 
         jacobian = get_transformation(vd, hd, p);
+        det = inv2x2(jacobian, iacobjan);
     }
 
     int hradius() const {

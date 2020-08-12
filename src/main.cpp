@@ -39,7 +39,7 @@ int main() {
     }
 
     auto pat = tree.materialise(&lt, t.data());
-    pat.write_rle(std::cerr);
+    ikpx2golly(pat, vel).write_rle(std::cerr);
     
 
     return 0;
