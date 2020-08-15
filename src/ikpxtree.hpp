@@ -14,8 +14,6 @@ struct predstruct {
 
 static_assert(sizeof(predstruct) == 16, "predstruct should be 16 bytes");
 
-typedef std::vector<uint64_t> u64seq;
-
 struct ikpxtree {
 
     int N;

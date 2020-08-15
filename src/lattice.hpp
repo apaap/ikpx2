@@ -6,6 +6,9 @@
 #include <cmath>
 
 
+typedef std::vector<uint64_t> u64seq;
+
+
 int signedinc(int x) {
     if (x == 0) {
         return -1;
