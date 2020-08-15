@@ -20,16 +20,14 @@ int main() {
     std::cerr << "ikpx2 has been compiled for the rule\033[32;1m " << rule;
     std::cerr << " \033[0m(" << npi << " prime implicants).\n" << std::endl;
 
-    for (auto&& pi : prime_implicants) { std::cerr << pi << std::endl; }
-
     check_sat_solver();
 
     // apg::pattern robin(&lt, "docs/partial2c7.rle");
     // Velocity vel("(2,1)c/7");
-    apg::pattern robin(&lt, "docs/almost.rle");
-    Velocity vel("(2,1)c/6");
-    // apg::pattern robin(&lt, "docs/rakeend.rle");
-    // Velocity vel("3c/7");
+    // apg::pattern robin(&lt, "docs/almost.rle");
+    // Velocity vel("(2,1)c/6");
+    apg::pattern robin(&lt, "docs/rakeend.rle");
+    Velocity vel("3c/7");
 
     std::vector<uint64_t> results;
     int n7 = ltransform(robin, vel, results);
@@ -43,17 +41,21 @@ int main() {
     for (uint64_t i = 0; i < results.size(); i += n7) {
         auto lower_t = tree.inject(&(results[i]));
         if (lower_t.size()) { t = lower_t; }
-
         if (i == 100 * n7) { break; }
     }
 
     MetaProblem mp(t, vel);
     std::cerr << "middle_bits = " << mp.middle_bits << std::endl;
-    auto sp = mp.get_instance(prime_implicants, 4, 4, 30);
+    auto sp = mp.get_instance(prime_implicants, 4, 4, 60);
 
-    auto svec = solve_using_kissat(sp.cnf, sp.fullwidth * sp.fullheight);
-    for (auto&& vv : svec) { std::cerr << vv << " "; }
-    std::cerr << std::endl;
+    sp.zerolast();
+
+    auto svec = sp.solve();
+
+    for (int i = 0; i <= ((int) svec.size()) - n7; i += 1) {
+        auto lower_t = tree.inject(&(svec[i]));
+        if (lower_t.size()) { t = lower_t; }
+    }
 
     auto pat = tree.materialise(&lt, t.data());
     ikpx2golly(pat, vel).write_rle(std::cerr);

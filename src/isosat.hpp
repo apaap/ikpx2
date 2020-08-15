@@ -2,6 +2,7 @@
 
 #include "lattice.hpp"
 #include "maths.hpp"
+#include "solver.hpp"
 
 void get_all_implicants(const int* truthtab, int* output, int depth) {
 
@@ -103,13 +104,34 @@ struct SubProblem {
     int fullwidth;
     int fullheight;
     int hdiam;
+    int vdiam;
 
-    SubProblem(int w, int h, int d) : fullwidth(w), fullheight(h), hdiam(d) { }
+    SubProblem(int w, int h, int d, int e) : fullwidth(w), fullheight(h), hdiam(d), vdiam(e) { }
 
     int coords2var(int x, int y) const {
 
         return x + y * fullwidth + 1;
 
+    }
+
+    u64seq solve() const {
+
+        auto solution = solve_using_kissat(cnf, fullwidth * fullheight);
+        u64seq res;
+
+        if (solution[0] != 10) { return res; }
+
+        for (int j = 0; j < fullheight; j++) {
+            uint64_t x = 0;
+            for (int i = 0; i < fullwidth; i++) {
+                if (solution[coords2var(i, j)] > 0) {
+                    x |= (1ull << i);
+                }
+            }
+            res.push_back(x);
+        }
+
+        return res;
     }
 
     /**
@@ -150,6 +172,14 @@ struct SubProblem {
         for (int j = 0; j < fullheight; j++) {
             for (int i = hdiam; i < fullwidth / 2; i++) {
                 identify_vars(coords2var(i, j), coords2var(i, fullwidth - 1 - j));
+            }
+        }
+    }
+
+    void zerolast() {
+        for (int j = fullheight - vdiam; j < fullheight; j++) {
+            for (int i = hdiam; i < fullwidth - hdiam; i++) {
+                set_state(i, j, 0);
             }
         }
     }
@@ -206,7 +236,7 @@ struct MetaProblem {
 
         std::vector<int> vars;
 
-        SubProblem sp(fullwidth, fullheight, hdiam);
+        SubProblem sp(fullwidth, fullheight, hdiam, vradius * 2);
 
         auto& jacobian = vel.jacobian;
 
