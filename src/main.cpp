@@ -24,10 +24,10 @@ int main() {
 
     // apg::pattern robin(&lt, "docs/partial2c7.rle");
     // Velocity vel("(2,1)c/7");
-    // apg::pattern robin(&lt, "docs/almost.rle");
-    // Velocity vel("(2,1)c/6");
-    apg::pattern robin(&lt, "docs/rakeend.rle");
-    Velocity vel("3c/7");
+    apg::pattern robin(&lt, "docs/almost.rle");
+    Velocity vel("(2,1)c/6");
+    // apg::pattern robin(&lt, "docs/rakeend.rle");
+    // Velocity vel("3c/7");
 
     std::vector<uint64_t> results;
     int n7 = ltransform(robin, vel, results);
@@ -46,9 +46,7 @@ int main() {
 
     MetaProblem mp(t, vel);
     std::cerr << "middle_bits = " << mp.middle_bits << std::endl;
-    auto sp = mp.get_instance(prime_implicants, 4, 4, 60);
-
-    sp.zerolast();
+    auto sp = mp.get_instance(prime_implicants, 4, 4, 30);
 
     auto svec = sp.solve();
 

@@ -200,13 +200,18 @@ struct SubProblem {
 
 struct MetaProblem {
 
+    // input parameters:
     u64seq initial_rows;
     Velocity vel;
-    int middle_bits;
+    bool reverse;
+
+    // derived parameters:
     bool symmetric;
     bool gutter_symmetric;
+    int middle_bits;
 
-    MetaProblem(const u64seq &initial_rows, const Velocity &vel) : initial_rows(initial_rows), vel(vel) {
+    MetaProblem(const u64seq &initial_rows, const Velocity &vel, bool reverse=false) :
+        initial_rows(initial_rows), vel(vel), reverse(reverse) {
 
         uint64_t shadow = 0;
         for (auto&& x : initial_rows) { shadow |= x; }
@@ -238,7 +243,12 @@ struct MetaProblem {
 
         SubProblem sp(fullwidth, fullheight, hdiam, vradius * 2);
 
-        auto& jacobian = vel.jacobian;
+        int jacobian[6];
+
+        for (int i = 0; i < 6; i += 2) {
+            jacobian[i] = vel.jacobian[i];
+            jacobian[i+1] = (reverse ? -1 : 1) * vel.jacobian[i+1];
+        }
 
         for (int j = 0; j < fullheight; j += 1) {
             for (int i = 0; i < fullwidth; i += 1) {
