@@ -122,9 +122,9 @@ struct SubProblem {
 
         for (int j = 0; j < fullheight; j++) {
             uint64_t x = 0;
-            for (int i = 0; i < fullwidth; i++) {
+            for (int i = hdiam; i < fullwidth - hdiam; i++) {
                 if (solution[coords2var(i, j)] > 0) {
-                    x |= (1ull << i);
+                    x |= (1ull << (i - hdiam));
                 }
             }
             res.push_back(x);
@@ -301,6 +301,102 @@ struct MetaProblem {
         }
 
         return sp;
+    }
+
+    template<typename Fn>
+    void find_all_solutions(int max_width, int exhausted_width, const std::vector<int> &prime_implicants, int lookahead, Fn lambda) {
+
+        uint64_t rproblems = 0;
+
+        for (int lpad = 0; lpad <= max_width - middle_bits; lpad++) {
+            rproblems |= (1ull << lpad);
+        }
+
+        bool try_gutter = gutter_symmetric;
+        bool try_symmetric = symmetric;
+
+        for (int w = max_width; w > exhausted_width; w--) {
+
+            if (w > 60) {
+                // the maximum asymmetric search width is 60:
+                continue;
+            }
+
+            // std::cerr << "# w = " << w << "; rproblems = " << rproblems << std::endl;
+
+            // asymmetric subproblems:
+            for (int lpad = 0; lpad <= w - middle_bits; lpad++) {
+
+                if (((rproblems >> lpad) & 1) == 0) { continue; }
+
+                int solutions = 0;
+
+                int rpad = w - middle_bits - lpad;
+
+                // std::cerr << "# lpad = " << lpad << "; rpad = " << rpad << std::endl;
+
+                auto sp = get_instance(prime_implicants, lpad, rpad, lookahead);
+                int res = sp.find_all_solutions([&](const u64seq &sol) {
+                    solutions += 1;
+                    lambda(sol);
+                });
+
+                if ((solutions == 0) && (res != 0)) {
+                    // UNSATISFIABLE
+                    rproblems ^= (1ull << lpad);
+                }
+            }
+            rproblems &= (rproblems >> 1);
+
+            if (w > 30) {
+                // the maximum symmetric search width is 30:
+                continue;
+            }
+
+            // gutter-symmetric subproblems:
+            if (try_gutter) {
+
+                int lpad = w - ((middle_bits - 1) >> 1);
+
+                if (lpad >= 0) {
+                    int solutions = 0;
+                    auto sp = get_instance(prime_implicants, lpad, lpad, lookahead);
+                    sp.symmetrise();
+                    sp.gutterise();
+
+                    int res = sp.find_all_solutions([&](const u64seq &sol) {
+                        solutions += 1;
+                        lambda(sol);
+                    });
+
+                    if ((solutions == 0) && (res != 0)) {
+                        try_gutter = false;
+                    }
+                }
+            }
+
+            // symmetric subproblems:
+            if (try_symmetric) {
+
+                int lpad = w - ((middle_bits + 1) >> 1);
+
+                if (lpad >= 0) {
+                    int solutions = 0;
+                    auto sp = get_instance(prime_implicants, lpad, lpad, lookahead);
+                    sp.symmetrise();
+
+                    int res = sp.find_all_solutions([&](const u64seq &sol) {
+                        solutions += 1;
+                        lambda(sol);
+                    });
+
+                    if ((solutions == 0) && (res != 0)) {
+                        try_gutter = false;
+                        try_symmetric = false;
+                    }
+                }
+            }
+        }
     }
 };
 

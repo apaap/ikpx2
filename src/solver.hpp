@@ -38,6 +38,8 @@ std::vector<int> solve_using_kissat(const std::vector<int> &cnf, int literals_to
 template<typename Fn>
 int multisolve(std::vector<int> &cnf, const std::vector<int> &unique_literals, int literals_to_return, Fn lambda) {
 
+    // TODO use incremental solving once Armin Biere has implemented it.
+
     size_t origsize = cnf.size();
     int res = 0;
 

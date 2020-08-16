@@ -90,7 +90,7 @@ int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint64_t> &resu
 
     if (ikpx.nonempty()) {
 
-        int64_t bbox[4];
+        int64_t bbox[4] = {0ull, 0ull, 0ull, 0ull};
         ikpx.getrect(bbox);
         ikpx = ikpx.shift(hradius - bbox[0], vradius - bbox[1]);
 
@@ -115,7 +115,7 @@ int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint64_t> &resu
                     }
                 }
 
-                if (truthtab[x] != ikpx.getcell(i + vel.jacobian[4], j + vel.jacobian[5])) {
+                if (truthtab[x] != ((int) ikpx.getcell(i + vel.jacobian[4], j + vel.jacobian[5]))) {
                     line_errors += 1;
                 }
             }

@@ -41,14 +41,13 @@ int main() {
     for (uint64_t i = 0; i < results.size(); i += n7) {
         auto lower_t = tree.inject(&(results[i]));
         if (lower_t.size()) { t = lower_t; }
-        if (i == 100 * n7) { break; }
+        if (((int) i) == 100 * n7) { break; }
     }
 
     MetaProblem mp(t, vel);
     std::cerr << "middle_bits = " << mp.middle_bits << std::endl;
-    auto sp = mp.get_instance(prime_implicants, 4, 4, 30);
 
-    sp.find_all_solutions([&](const u64seq &svec) {
+    mp.find_all_solutions(29, 1, prime_implicants, 30, [&](const u64seq &svec) {
 
         for (int i = 0; i <= ((int) svec.size()) - n7; i += 1) {
             auto lower_t = tree.inject(&(svec[i]));
