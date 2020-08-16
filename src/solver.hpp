@@ -35,6 +35,26 @@ std::vector<int> solve_using_kissat(const std::vector<int> &cnf, int literals_to
     return solution;
 }
 
+template<typename Fn>
+int multisolve(std::vector<int> &cnf, const std::vector<int> &unique_literals, int literals_to_return, Fn lambda) {
+
+    size_t origsize = cnf.size();
+    int res = 0;
+
+    while (true) {
+        auto solution = solve_using_kissat(cnf, literals_to_return);
+        res = solution[0];
+        if (res != 10) { break; }
+        for (auto&& x : unique_literals) { cnf.push_back(-solution[x]); }
+        cnf.push_back(0);
+        lambda(solution);
+    }
+
+    cnf.resize(origsize);
+    return res;
+}
+
+
 std::vector<int> ramsey4(int N) {
 
     std::vector<int> cnf;

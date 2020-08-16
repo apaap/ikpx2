@@ -114,9 +114,8 @@ struct SubProblem {
 
     }
 
-    u64seq solve() const {
+    u64seq sol2res(const std::vector<int> &solution) const {
 
-        auto solution = solve_using_kissat(cnf, fullwidth * fullheight);
         u64seq res;
 
         if (solution[0] != 10) { return res; }
@@ -132,6 +131,27 @@ struct SubProblem {
         }
 
         return res;
+    }
+
+    u64seq solve() const {
+
+        auto solution = solve_using_kissat(cnf, fullwidth * fullheight);
+        return sol2res(solution);
+    }
+
+    template<typename Fn>
+    int find_all_solutions(Fn lambda) {
+
+        std::vector<int> unique_literals;
+        for (int i = 0; i < fullwidth; i++) {
+            unique_literals.push_back(coords2var(i, vdiam));
+        }
+
+        return multisolve(cnf, unique_literals, fullwidth * fullheight, [&](std::vector<int> &solution) {
+
+            lambda(sol2res(solution));
+
+        });
     }
 
     /**

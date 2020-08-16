@@ -48,15 +48,17 @@ int main() {
     std::cerr << "middle_bits = " << mp.middle_bits << std::endl;
     auto sp = mp.get_instance(prime_implicants, 4, 4, 30);
 
-    auto svec = sp.solve();
+    sp.find_all_solutions([&](const u64seq &svec) {
 
-    for (int i = 0; i <= ((int) svec.size()) - n7; i += 1) {
-        auto lower_t = tree.inject(&(svec[i]));
-        if (lower_t.size()) { t = lower_t; }
-    }
+        for (int i = 0; i <= ((int) svec.size()) - n7; i += 1) {
+            auto lower_t = tree.inject(&(svec[i]));
+            if (lower_t.size()) { t = lower_t; }
+        }
 
-    auto pat = tree.materialise(&lt, t.data());
-    ikpx2golly(pat, vel).write_rle(std::cerr);
+        auto pat = tree.materialise(&lt, t.data());
+        ikpx2golly(pat, vel).write_rle(std::cerr);
+
+    });
     
 
     return 0;
