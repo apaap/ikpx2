@@ -11,4 +11,4 @@ test:
     stage: test
     script:
         - bash recompile.sh
-        - ./ikpx2
+        - ./ikpx2 --help
