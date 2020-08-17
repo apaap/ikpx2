@@ -3,15 +3,50 @@
 #include "ikpxtree.hpp"
 #include "../cqueue/blockingconcurrentqueue.h"
 
+#define COMMAND_TERMINATE 2
+
 struct workitem {
 
     u64seq initial_rows;
     int16_t exhausted_width;
     int16_t maximum_width;
     int16_t lookahead;
-    int16_t reverse;
+    int16_t direction;
 
 };
+
+typedef moodycamel::BlockingConcurrentQueue<workitem> WorkQueue;
+
+void worker_loop(WorkQueue *from_master, WorkQueue *to_master, Velocity vel, std::vector<int> prime_implicants) {
+
+    while (true) {
+
+        workitem item;
+        from_master->wait_dequeue(item);
+
+        if (item.direction == COMMAND_TERMINATE) { break; }
+
+        MetaProblem mp(item.initial_rows, vel);
+
+        mp.find_all_solutions(item.maximum_width, item.exhausted_width,
+            prime_implicants, item.lookahead, [&](const u64seq &svec) {
+
+            workitem item2;
+
+            item2.initial_rows = svec;
+            item2.exhausted_width = item.maximum_width;
+            item2.maximum_width = 0;
+            item2.lookahead = 0;
+            item2.direction = item.direction;
+
+            to_master->enqueue(item2);
+
+        });
+
+        to_master->enqueue(item);
+    }
+
+}
 
 int run_ikpx(const std::vector<std::string> &arguments) {
 

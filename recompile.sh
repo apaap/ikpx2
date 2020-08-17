@@ -24,6 +24,6 @@ echo "Configuring lifelib..."
 python mkparams.py $rulearg
 
 echo "Compiling ikpx2..."
-g++ -O3 -Wall -Wextra -march=native --std=c++11 -Lkissat/build src/main.cpp -lkissat -o ikpx2
+g++ -O3 -Wall -Wextra -march=native --std=c++11 -Lkissat/build src/main.cpp -lkissat -pthread -o ikpx2
 
 printf "\n\033[32;1m **** build process completed successfully **** \033[0m\n"
