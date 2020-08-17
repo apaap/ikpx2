@@ -80,10 +80,7 @@ apg::pattern ikpx2golly(apg::pattern &x, const Velocity &vel) {
 }
 
 
-int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint64_t> &results) {
-
-    apg::pattern ikpx = golly2ikpx(x, vel);
-    std::vector<int> truthtab = truth_table_for_rule(x.getlab(), x.getrule());
+int extract_rows(apg::pattern &ikpx, const Velocity &vel, const std::vector<int> &truthtab, std::vector<uint64_t> &results) {
 
     int hradius = vel.hradius();
     int vradius = vel.vradius();
@@ -159,3 +156,12 @@ int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint64_t> &resu
     return vradius * 2 + 1;
 
 }
+
+int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint64_t> &results) {
+
+    apg::pattern ikpx = golly2ikpx(x, vel);
+    std::vector<int> truthtab = truth_table_for_rule(x.getlab(), x.getrule());
+    return extract_rows(ikpx, vel, truthtab, results);
+
+}
+

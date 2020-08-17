@@ -1,26 +1,30 @@
-#include "isosat.hpp"
-#include "solver.hpp"
 #include "banner.hpp"
-#include "ikpxtree.hpp"
+#include "core.hpp"
 
 
-
-int main() {
+int main(int argc, char* argv[]) {
 
     print_banner();
+    std::vector<std::string> arguments;
 
-    auto rvec = apg::get_all_rules();
-    std::string rule = rvec[0];
-    apg::lifetree<uint32_t, 1> lt(1000);
+    for (int i = 1; i < argc; i++) {
+        arguments.emplace_back(argv[i]);
+    }
 
-    auto truth_table = truth_table_for_rule(&lt, rule);
-    auto prime_implicants = truth_table_to_prime_implicants(truth_table);
-    int npi = prime_implicants.size();
-
-    std::cerr << "ikpx2 has been compiled for the rule\033[32;1m " << rule;
-    std::cerr << " \033[0m(" << npi << " prime implicants).\n" << std::endl;
+    for (auto&& x : arguments) {
+        if ((x == "-h") || (x == "--help")) {
+            print_help();
+            return 0;
+        }
+    }
 
     check_sat_solver();
+
+    return run_ikpx(arguments);
+
+}
+
+/*
 
     // apg::pattern robin(&lt, "docs/partial2c7.rle");
     // Velocity vel("(2,1)c/7");
@@ -63,3 +67,5 @@ int main() {
     return 0;
 
 }
+
+*/

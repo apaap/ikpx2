@@ -5,6 +5,8 @@
 #include <iostream>
 #include <cmath>
 
+#define ERREXIT(x) std::cerr << "\033[31;1mError:\033[0m " << x << std::endl; exit(1)
+
 
 typedef std::vector<uint64_t> u64seq;
 
@@ -46,23 +48,19 @@ std::vector<int> get_transformation(int vd, int hd, int p) {
     int vdp = apg::euclid_gcd(vd, p);
 
     if (apg::euclid_gcd(vdp, hd) != 1) {
-        std::cerr << "Error: vertical displacement, horizontal displacement, and period must be coprime" << std::endl;
-        exit(1);
+        ERREXIT("vertical displacement, horizontal displacement, and period must be coprime");
     }
 
     if ((p <= 0) || (vd <= 0)) {
-        std::cerr << "Error: vertical displacement and period must be positive" << std::endl;
-        exit(1);
+        ERREXIT("vertical displacement and period must be positive");
     }
 
     if (hd < 0) {
-        std::cerr << "Error: horizontal displacement must be nonnegative" << std::endl;
-        exit(1);
+        ERREXIT("horizontal displacement must be nonnegative");
     }
 
     if (hd > vd) {
-        std::cerr << "Error: horizontal displacement cannot exceed vertical displacement" << std::endl;
-        exit(1);
+        ERREXIT("horizontal displacement cannot exceed vertical displacement");
     }
 
     int du_dx =  vd / apg::euclid_gcd(vd, hd);
@@ -111,8 +109,7 @@ struct Velocity {
             apg::onlyints(ints, str);
 
             if ((ints.size() != 1) && (ints.size() != 2) && (ints.size() != 3)) {
-                std::cerr << "Incomprehensible velocity string: " << velocity << std::endl;
-                exit(1);
+                ERREXIT("incomprehensible velocity string: " << velocity);
             }
         }
 
