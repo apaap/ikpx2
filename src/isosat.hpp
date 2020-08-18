@@ -312,6 +312,8 @@ struct MetaProblem {
             rproblems |= (1ull << lpad);
         }
 
+        uint64_t zproblems = rproblems;
+
         bool try_gutter = gutter_symmetric;
         bool try_symmetric = symmetric;
 
@@ -321,8 +323,6 @@ struct MetaProblem {
                 // the maximum asymmetric search width is 60:
                 continue;
             }
-
-            // std::cerr << "# w = " << w << "; rproblems = " << rproblems << std::endl;
 
             // asymmetric subproblems:
             for (int lpad = 0; lpad <= w - middle_bits; lpad++) {
@@ -345,8 +345,22 @@ struct MetaProblem {
                     // UNSATISFIABLE
                     rproblems ^= (1ull << lpad);
                 }
+
+                zproblems &= rproblems;
+
+                if ((zproblems >> lpad) & 1) {
+                    sp.zerolast();
+                    u64seq zres = sp.solve();
+                    if (zres.size()) {
+                        lambda(zres);
+                    } else {
+                        zproblems ^= (1ull << lpad);
+                    }
+                }
             }
+
             rproblems &= (rproblems >> 1);
+            zproblems &= (zproblems >> 1);
 
             if (w > 30) {
                 // the maximum symmetric search width is 30:
@@ -371,6 +385,10 @@ struct MetaProblem {
 
                     if ((solutions == 0) && (res != 0)) {
                         try_gutter = false;
+                    } else if (w == max_width) {
+                        sp.zerolast();
+                        u64seq zres = sp.solve();
+                        if (zres.size()) { lambda(zres); }
                     }
                 }
             }
@@ -393,6 +411,10 @@ struct MetaProblem {
                     if ((solutions == 0) && (res != 0)) {
                         try_gutter = false;
                         try_symmetric = false;
+                    } else if (w == max_width) {
+                        sp.zerolast();
+                        u64seq zres = sp.solve();
+                        if (zres.size()) { lambda(zres); }
                     }
                 }
             }

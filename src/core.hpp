@@ -127,14 +127,36 @@ struct semisearch {
 
         u64seq p;
 
-        for (int i = 0; i < jumpahead; i++) {
+        int range = jumpahead;
+        int n6 = vel.vradius() * 2;
+
+        uint64_t shadow = 0;
+
+        for (size_t i = results.size() - n6; i < results.size(); i++) {
+            shadow |= results[i];
+        }
+
+        if (shadow == 0) { range = results.size() - n6; }
+
+        bool complete = false;
+
+        for (int i = 0; i < range; i++) {
             auto pc = inject(&(results[i]));
-            if (!(pc.empty())) { p = pc; }
+            if (pc.empty()) { complete = true; break; }
+            p = pc;
         }
 
         if (p.empty()) { return; }
 
-        if (tree.preds[p].depth > record_depth) {
+        // guarantee that we don't print the same partial twice:
+        if (tree.preds[p].exhausted_width >= 2) { return; }
+        tree.preds[p].exhausted_width = 2;
+
+        if (complete) {
+            auto pat = tree.materialise(lab, p.data());
+            std::cout << "\n#C complete spaceship" << std::endl;
+            ikpx2golly(pat, vel).write_rle(std::cout);
+        } else if (tree.preds[p].depth > record_depth) {
             record_depth = tree.preds[p].depth;
             auto pat = tree.materialise(lab, p.data());
             std::cout << "\n#C depth = " << record_depth << std::endl;
