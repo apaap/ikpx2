@@ -266,9 +266,9 @@ int run_ikpx(const std::vector<std::string> &arguments) {
 
     std::cerr << "Valid velocity: \033[32;1m(" << vel.vd << "," << vel.hd << ")c/" << vel.p << "\033[0m" << std::endl;
 
-    std::cerr << "[(" << vel.jacobian[0] << ", " << vel.jacobian[1] << "), (" <<
-                         vel.jacobian[2] << ", " << vel.jacobian[3] << "), (" <<
-                         vel.jacobian[4] << ", " << vel.jacobian[5] << ")]" << std::endl;
+    std::cerr << "Jacobian: [(" << vel.jacobian[0] << ", " << vel.jacobian[1] << "), (" <<
+                                    vel.jacobian[2] << ", " << vel.jacobian[3] << "), (" <<
+                                    vel.jacobian[4] << ", " << vel.jacobian[5] << ")]" << std::endl;
 
     // return 0;
 
