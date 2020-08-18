@@ -312,8 +312,6 @@ struct MetaProblem {
             rproblems |= (1ull << lpad);
         }
 
-        uint64_t zproblems = rproblems;
-
         bool try_gutter = gutter_symmetric;
         bool try_symmetric = symmetric;
 
@@ -344,23 +342,14 @@ struct MetaProblem {
                 if ((solutions == 0) && (res != 0)) {
                     // UNSATISFIABLE
                     rproblems ^= (1ull << lpad);
-                }
-
-                zproblems &= rproblems;
-
-                if ((zproblems >> lpad) & 1) {
+                } else if (w == max_width) {
                     sp.zerolast();
                     u64seq zres = sp.solve();
-                    if (zres.size()) {
-                        lambda(zres);
-                    } else {
-                        zproblems ^= (1ull << lpad);
-                    }
+                    if (zres.size()) { lambda(zres); }
                 }
             }
 
             rproblems &= (rproblems >> 1);
-            zproblems &= (zproblems >> 1);
 
             if (w > 30) {
                 // the maximum symmetric search width is 30:

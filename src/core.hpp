@@ -96,6 +96,19 @@ struct semisearch {
         items_in_aether += 1;
     }
 
+    void adaptive_widen() {
+
+        search_width += 1;
+
+        std::cout << "Adaptive widening to width " << search_width << std::endl;
+
+        for (auto it = tree.preds.begin(); it != tree.preds.end(); ++it) {
+
+            enqueue(it->first, it->second.exhausted_width);
+
+        }
+    }
+
     u64seq inject(const uint64_t *fullseq) {
 
         auto elem = tree.inject(fullseq);
@@ -195,7 +208,7 @@ void master_loop(semisearch &searcher, WorkQueue &to_master) {
 
     uint64_t xcount = 0;
 
-    do {
+    while (searcher.items_in_aether) {
 
         workitem item;
         to_master.wait_dequeue(item);
@@ -214,7 +227,7 @@ void master_loop(semisearch &searcher, WorkQueue &to_master) {
             std::cout << "; treesize = " << searcher.tree.preds.size() << std::endl;
         }
 
-    } while (searcher.items_in_aether);
+    }
 
 }
 
@@ -225,16 +238,23 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     std::string velocity = "";
     std::string directory = "";
 
+    std::vector<std::string> filenames;
+
     for (size_t i = 0; i < arguments.size(); i++) {
 
         std::string command = arguments[i];
+        if (command == "") { continue; }
 
-        if ((command == "-v") || (command == "--velocity")) {
-            velocity = arguments[++i];
-        } else if ((command == "-d") || (command == "--directory")) {
-            directory = arguments[++i];
+        if (command[0] == '-') {
+            if ((command == "-v") || (command == "--velocity")) {
+                velocity = arguments[++i];
+            } else if ((command == "-d") || (command == "--directory")) {
+                directory = arguments[++i];
+            } else {
+                ERREXIT("unknown command: " << command);
+            }
         } else {
-            ERREXIT("unknown command: " << command);
+            filenames.push_back(command);
         }
     }
 
@@ -246,15 +266,29 @@ int run_ikpx(const std::vector<std::string> &arguments) {
 
     std::cerr << "Valid velocity: \033[32;1m(" << vel.vd << "," << vel.hd << ")c/" << vel.p << "\033[0m" << std::endl;
 
+    std::cerr << "[(" << vel.jacobian[0] << ", " << vel.jacobian[1] << "), (" <<
+                         vel.jacobian[2] << ", " << vel.jacobian[3] << "), (" <<
+                         vel.jacobian[4] << ", " << vel.jacobian[5] << ")]" << std::endl;
+
+    // return 0;
+
     apg::lifetree<uint32_t, 1> lt(100);
 
     WorkQueue to_master;
 
-    semisearch hs(vel, 0, &lt, 24, 30, 15);
-    hs.load_file("docs/almost.rle");
+    // semisearch hs(vel, 0, &lt, 24, 30, 15);
+    // hs.load_file("docs/almost.rle");
+    semisearch hs(vel, 0, &lt, 6, 56, 28);
+
+    for (auto&& filename : filenames) {
+        hs.load_file(filename);
+    }
     hs.launch_thread(to_master, 8);
 
-    master_loop(hs, to_master);
+    while (true) {
+        master_loop(hs, to_master);
+        hs.adaptive_widen();
+    }
 
     hs.join_threads();
 
