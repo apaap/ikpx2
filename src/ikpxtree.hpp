@@ -2,6 +2,7 @@
 
 #include <map>
 #include "gollat.hpp"
+#include <stdio.h>
 
 struct predstruct {
 
@@ -20,6 +21,34 @@ struct ikpxtree {
     std::map<u64seq, predstruct> preds;
 
     ikpxtree(int tuple_length) : N(tuple_length) { }
+
+    void write_to_file(FILE* fptr) {
+
+        uint64_t header[2];
+        header[0] = N;
+        header[1] = preds.size();
+        fwrite(header, 8, 2, fptr);
+
+        for (auto it = preds.begin(); it != preds.end(); ++it) {
+            fwrite(&(it->second), 16, 1, fptr);
+            fwrite(it->first.data(), 8, N, fptr);
+        }
+    }
+
+    void read_from_file(FILE* fptr) {
+
+        uint64_t header[2];
+        fread(header, 8, 2, fptr);
+        N = header[0];
+
+        for (uint64_t i = 0; i < header[1]; i++) {
+            u64seq u(N);
+            predstruct ps;
+            fread(&ps, 16, 1, fptr);
+            fread(u.data(), 8, N, fptr);
+            preds[u] = ps;
+        }
+    }
 
     template<typename T>
     int v2shift(const uint64_t __restrict__ *seq, T &output) const {
