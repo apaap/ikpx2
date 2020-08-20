@@ -3,6 +3,8 @@
 #include "ikpxtree.hpp"
 #include "../cqueue/blockingconcurrentqueue.h"
 
+#include <chrono>
+
 #define COMMAND_TERMINATE 2
 
 struct workitem {
@@ -204,9 +206,17 @@ struct semisearch {
 
 };
 
-void master_loop(semisearch &searcher, WorkQueue &to_master) {
+void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directory, int backup_duration) {
+
+    std::vector<std::string> checkpoint_names;
+
+    checkpoint_names.push_back(directory + "/backup_odd.bin");
+    checkpoint_names.push_back(directory + "/backup_even.bin");
 
     uint64_t xcount = 0;
+    uint64_t checkpoint_number = 0;
+
+    auto t1 = std::chrono::steady_clock::now();
 
     while (searcher.items_in_aether) {
 
@@ -227,6 +237,28 @@ void master_loop(semisearch &searcher, WorkQueue &to_master) {
             std::cout << "; treesize = " << searcher.tree.preds.size() << std::endl;
         }
 
+        auto t2 = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count() > backup_duration) {
+            t1 = t2;
+            std::cout << "Performing backup..." << std::endl;
+
+            auto bfname = checkpoint_names[checkpoint_number];
+            FILE* fptr = fopen(bfname.c_str(), "wb");
+
+            if (fptr == NULL) {
+                std::cout << "...cannot open file " << bfname << " for writing." << std::endl;
+            } else {
+                checkpoint_number += 1;
+                if (checkpoint_number >= checkpoint_names.size()) {
+                    checkpoint_number = 0;
+                }
+
+                searcher.tree.write_to_file(fptr);
+                fclose(fptr);
+
+                std::cout << "...saved backup file " << bfname << " successfully." << std::endl;
+            }
+        }
     }
 
 }
@@ -236,7 +268,14 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     std::cerr << "sizeof(workitem) = " << sizeof(workitem) << std::endl;
 
     std::string velocity = "";
-    std::string directory = "";
+    std::string directory = ".";
+
+    // DEFAULTS:
+    int width = 3;
+    int lookahead = 0;
+    int jumpahead = 0;
+    int backup_duration = 3600;
+    int threads = 8;
 
     std::vector<std::string> filenames;
 
@@ -250,6 +289,16 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                 velocity = arguments[++i];
             } else if ((command == "-d") || (command == "--directory")) {
                 directory = arguments[++i];
+            } else if ((command == "-b") || (command == "--backup")) {
+                backup_duration = std::stoll(arguments[++i]);
+            } else if ((command == "-k") || (command == "--lookahead")) {
+                lookahead = std::stoll(arguments[++i]);
+            } else if ((command == "-j") || (command == "--jumpahead")) {
+                jumpahead = std::stoll(arguments[++i]);
+            } else if ((command == "-w") || (command == "--width")) {
+                width = std::stoll(arguments[++i]);
+            } else if ((command == "-p") || (command == "--threads")) {
+                threads = std::stoll(arguments[++i]);
             } else {
                 ERREXIT("unknown command: " << command);
             }
@@ -262,31 +311,29 @@ int run_ikpx(const std::vector<std::string> &arguments) {
         ERREXIT("velocity must be specified.");
     }
 
+    if (lookahead == 0) {
+        ERREXIT("lookahead must be specified.");
+    } else if (jumpahead == 0) {
+        jumpahead = lookahead >> 1;
+    }
+
     Velocity vel(velocity);
 
-    std::cerr << "Valid velocity: \033[32;1m(" << vel.vd << "," << vel.hd << ")c/" << vel.p << "\033[0m" << std::endl;
+    std::cout << "Valid velocity: \033[32;1m(" << vel.vd << "," << vel.hd << ")c/" << vel.p << "\033[0m" << std::endl;
 
-    std::cerr << "Jacobian: [(" << vel.jacobian[0] << ", " << vel.jacobian[1] << "), (" <<
+    std::cout << "Jacobian: [(" << vel.jacobian[0] << ", " << vel.jacobian[1] << "), (" <<
                                     vel.jacobian[2] << ", " << vel.jacobian[3] << "), (" <<
                                     vel.jacobian[4] << ", " << vel.jacobian[5] << ")]" << std::endl;
-
-    // return 0;
 
     apg::lifetree<uint32_t, 1> lt(100);
 
     WorkQueue to_master;
-
-    // semisearch hs(vel, 0, &lt, 24, 30, 15);
-    // hs.load_file("docs/almost.rle");
-    semisearch hs(vel, 0, &lt, 6, 56, 28);
-
-    for (auto&& filename : filenames) {
-        hs.load_file(filename);
-    }
-    hs.launch_thread(to_master, 8);
+    semisearch hs(vel, 0, &lt, width, lookahead, jumpahead);
+    for (auto&& filename : filenames) { hs.load_file(filename); }
+    hs.launch_thread(to_master, threads);
 
     while (true) {
-        master_loop(hs, to_master);
+        master_loop(hs, to_master, directory, backup_duration);
         hs.adaptive_widen();
     }
 
