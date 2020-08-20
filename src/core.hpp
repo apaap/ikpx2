@@ -129,12 +129,28 @@ struct semisearch {
 
     void load_file(std::string filename) {
 
-        apg::pattern robin(lab, filename);
-        std::vector<uint64_t> results;
-        int n7 = ltransform(robin, vel, results);
+        FILE* fptr = fopen(filename.c_str(), "rb");
 
-        for (uint64_t i = 0; i < results.size(); i += n7) {
-            inject(&(results[i]));
+        if (fptr == NULL) {
+            ERREXIT("cannot open " << filename << " for reading.");
+        }
+
+        uint64_t bigheader = 0;
+        fread(&bigheader, 8, 1, fptr);
+
+        if (bigheader == 216768998249ull) {
+            tree.read_from_file(fptr);
+            fclose(fptr);
+        } else {
+            fclose(fptr);
+
+            apg::pattern robin(lab, filename);
+            std::vector<uint64_t> results;
+            int n7 = ltransform(robin, vel, results);
+
+            for (uint64_t i = 0; i < results.size(); i += n7) {
+                inject(&(results[i]));
+            }
         }
     }
 
@@ -253,7 +269,11 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
                     checkpoint_number = 0;
                 }
 
+                uint64_t bigheader = 216768998249ull;
+
+                fwrite(&bigheader, 8, 1, fptr);
                 searcher.tree.write_to_file(fptr);
+
                 fclose(fptr);
 
                 std::cout << "...saved backup file " << bfname << " successfully." << std::endl;
