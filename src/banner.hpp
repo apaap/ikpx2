@@ -34,6 +34,8 @@ void print_help() {
 
                 "Usage: ./ikpx2 OPTIONS INPUT_FILES\n\n"
 
+                "Minimal example: ./ikpx2 -v '(2,1)c/6' -k 30\n\n"
+
                 "Options:\n"
 
                 "   -v, --velocity  specify the velocity, e.g. '(2,1)c/6' or 'c/5d'\n"

@@ -356,6 +356,11 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     WorkQueue to_master;
     semisearch hs(vel, 0, &lt, width, lookahead, jumpahead);
     for (auto&& filename : filenames) { hs.load_file(filename); }
+
+    if (hs.tree.preds.size() == 0) {
+        hs.tree.inject_base_element();
+    }
+
     hs.launch_thread(to_master, threads);
 
     while (true) {

@@ -93,6 +93,14 @@ struct ikpxtree {
         return elem_lower;
     }
 
+    void inject_base_element() {
+
+        u64seq base_element(N+1, 0);
+        base_element[N] = 1;
+        inject(base_element.data());
+
+    }
+
     apg::pattern materialise(lab32_t *lab, const uint64_t *lastelem) const {
 
         u64seq elem(N);
