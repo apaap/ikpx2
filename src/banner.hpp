@@ -32,9 +32,17 @@ void print_help() {
     std::cerr << "Incremental Knightship Partial Extender, version 2.0\n"
                 "====================================================\n\n"
 
+                "Usage: ./ikpx2 OPTIONS INPUT_FILES\n\n"
+
                 "Options:\n"
 
                 "   -v, --velocity  specify the velocity, e.g. '(2,1)c/6' or 'c/5d'\n"
-                "   -h, --help      show this message and exit\n" << std::endl;
+                "   -k, --lookahead number of logical rows by which to extend partials\n"
+                "   -p, --threads   number of CPU threads to use (default 8)\n"
+                "   -d, --directory existing directory in which to save backup files\n"
+                "   -b, --backup    number of seconds between adjacent backups\n"
+                "   -h, --help      show this message and exit\n\n"
+
+                "The input files can be either RLEs or ikpx2 backups (of the same velocity!).\n" << std::endl;
 
 }
