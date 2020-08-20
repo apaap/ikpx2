@@ -1,6 +1,7 @@
 #pragma once
 #include "isosat.hpp"
 #include "ikpxtree.hpp"
+#include "banner.hpp"
 #include "../cqueue/blockingconcurrentqueue.h"
 
 #include <chrono>
@@ -284,6 +285,11 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
 }
 
 int run_ikpx(const std::vector<std::string> &arguments) {
+
+    if (arguments.size() == 0) {
+        print_help();
+        ERREXIT("zero command-line arguments were provided.");
+    }
 
     std::cerr << "sizeof(workitem) = " << sizeof(workitem) << std::endl;
 
