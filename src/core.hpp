@@ -5,7 +5,7 @@
 #include "../cqueue/blockingconcurrentqueue.h"
 
 #include <chrono>
-#include <set>
+#include <unordered_set>
 
 #define COMMAND_TERMINATE 2
 
@@ -71,7 +71,7 @@ struct semisearch {
     WorkQueue from_master;
     std::vector<std::thread> workers;
 
-    std::set<u64seq> already_seen;
+    std::unordered_set<uint64_t> already_seen;
 
     semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
@@ -179,16 +179,29 @@ struct semisearch {
 
         for (int i = 0; i < range; i++) {
             auto pc = inject(&(results[i]));
-            if (pc.empty()) { complete = true; break; }
+            if (pc.empty()) {
+                complete = true;
+                int j = i - n6;
+                if (j < 0) { j = 0; }
+                p = inject(&(results[j]));
+                break;
+            }
             p = pc;
         }
 
         if (p.empty()) { return; }
-        if ((!complete) && (tree.preds[p].depth < record_depth)) { return; }
-        if (already_seen.count(p)) { return; }
-        if (complete) { already_seen.insert(p); }
+        if ((!complete) && (tree.preds[p].depth <= record_depth)) { return; }
 
         auto pat = tree.materialise(lab, p.data());
+
+        if (complete) {
+            int64_t bbox[4];
+            pat.getrect(bbox);
+            uint64_t digest = pat.shift(0 - bbox[0], 0 - bbox[1]).digest();
+            if (already_seen.count(digest)) { return; }
+            already_seen.insert(digest);
+        }
+
         pat = ikpx2golly(pat, vel);
 
         if (complete) {
