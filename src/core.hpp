@@ -248,8 +248,15 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
 
     std::vector<std::string> checkpoint_names;
 
-    checkpoint_names.push_back(directory + "/backup_odd.bin");
-    checkpoint_names.push_back(directory + "/backup_even.bin");
+    {
+        std::ostringstream ss;
+        std::string rule = apg::get_all_rules()[0];
+        ss << directory << "/backup_" << rule;
+        ss << "_velocity_" << searcher.vel.vd << "_" << searcher.vel.hd << "_" << searcher.vel.p;
+        ss << "_width_" << searcher.search_width;
+        checkpoint_names.push_back(ss.str() + "_odd.bin");
+        checkpoint_names.push_back(ss.str() + "_even.bin");
+    }
 
     uint64_t xcount = 0;
     uint64_t checkpoint_number = 0;
