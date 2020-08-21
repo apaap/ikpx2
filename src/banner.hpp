@@ -32,9 +32,9 @@ void print_help() {
     std::cerr << "Incremental Knightship Partial Extender, version 2.0\n"
                 "====================================================\n\n"
 
-                "Usage: ./ikpx2 OPTIONS INPUT_FILES\n\n"
+                "Usage: ./ikpx2 -v VELOCITY [OTHER_OPTIONS...] [INPUT_FILES...]\n\n"
 
-                "Minimal example: ./ikpx2 -v '(2,1)c/6' -k 30\n\n"
+                "Minimal example: ./ikpx2 -v '(2,1)c/6'\n\n"
 
                 "Options:\n"
 
@@ -45,6 +45,12 @@ void print_help() {
                 "   -b, --backup    number of seconds between adjacent backups\n"
                 "   -h, --help      show this message and exit\n\n"
 
-                "The input files can be either RLEs or ikpx2 backups (of the same velocity!).\n" << std::endl;
+                "The input files can be either RLEs or ikpx2 backups (of the same velocity!).\n\n"
+
+                "To change the underlying rule, use:\n\n"
+
+                "    ./recompile.sh --rule RULE\n\n"
+
+                "where RULE can be any lifelike or isotropic rule in Hensel notation.\n" << std::endl;
 
 }

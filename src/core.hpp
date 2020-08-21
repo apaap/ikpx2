@@ -344,12 +344,6 @@ int run_ikpx(const std::vector<std::string> &arguments) {
         ERREXIT("velocity must be specified.");
     }
 
-    if (lookahead == 0) {
-        ERREXIT("lookahead must be specified.");
-    } else if (jumpahead == 0) {
-        jumpahead = lookahead >> 1;
-    }
-
     Velocity vel(velocity);
 
     std::cout << "Valid velocity: \033[32;1m(" << vel.vd << "," << vel.hd << ")c/" << vel.p << "\033[0m" << std::endl;
@@ -357,6 +351,11 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     std::cout << "Jacobian: [(" << vel.jacobian[0] << ", " << vel.jacobian[1] << "), (" <<
                                     vel.jacobian[2] << ", " << vel.jacobian[3] << "), (" <<
                                     vel.jacobian[4] << ", " << vel.jacobian[5] << ")]" << std::endl;
+
+    if (lookahead == 0) { lookahead = 9 * vel.jacobian[1]; }
+    if (jumpahead == 0) { jumpahead = lookahead >> 1; }
+
+    std::cout << "lookahead = " << lookahead << "; jumpahead = " << jumpahead << std::endl;
 
     apg::lifetree<uint32_t, 1> lt(100);
 
