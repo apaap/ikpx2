@@ -191,7 +191,7 @@ struct SubProblem {
     void symmetrise() {
         for (int j = 0; j < fullheight; j++) {
             for (int i = hdiam; i < fullwidth / 2; i++) {
-                identify_vars(coords2var(i, j), coords2var(i, fullwidth - 1 - j));
+                identify_vars(coords2var(i, j), coords2var(fullwidth - 1 - i, j));
             }
         }
     }
