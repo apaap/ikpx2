@@ -5,6 +5,7 @@
 #include "../cqueue/blockingconcurrentqueue.h"
 
 #include <chrono>
+#include <set>
 
 #define COMMAND_TERMINATE 2
 
@@ -69,6 +70,8 @@ struct semisearch {
     std::vector<int> prime_implicants;
     WorkQueue from_master;
     std::vector<std::thread> workers;
+
+    std::set<u64seq> already_seen;
 
     semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
@@ -168,7 +171,9 @@ struct semisearch {
             shadow |= results[i];
         }
 
-        if (shadow == 0) { range = results.size() - n6; }
+        if (shadow == 0) {
+            range = results.size() - n6;
+        }
 
         bool complete = false;
 
@@ -179,28 +184,24 @@ struct semisearch {
         }
 
         if (p.empty()) { return; }
+        if ((!complete) && (tree.preds[p].depth < record_depth)) { return; }
+        if (already_seen.count(p)) { return; }
+        if (complete) { already_seen.insert(p); }
 
-        // guarantee that we don't print the same partial twice:
-        if (tree.preds[p].exhausted_width >= 2) { return; }
-        tree.preds[p].exhausted_width = 2;
+        auto pat = tree.materialise(lab, p.data());
+        pat = ikpx2golly(pat, vel);
 
         if (complete) {
-            auto pat = tree.materialise(lab, p.data());
-            pat = ikpx2golly(pat, vel);
-
             if (pat[vel.p](vel.hd, vel.vd) == pat) {
                 std::cout << "\n#C completed spaceship: \033[34;1m" << pat.apgcode() << "\033[0m" << std::endl;
             } else {
                 std::cout << "\n#C completed tail" << std::endl;
             }
-            pat.write_rle(std::cout);
-
-        } else if (tree.preds[p].depth > record_depth) {
+        } else {
             record_depth = tree.preds[p].depth;
-            auto pat = tree.materialise(lab, p.data());
             std::cout << "\n#C depth = " << record_depth << std::endl;
-            ikpx2golly(pat, vel).write_rle(std::cout);
         }
+        pat.write_rle(std::cout);
     }
 
     void launch_thread(WorkQueue &to_master, int iters=1) {
