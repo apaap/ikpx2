@@ -31,6 +31,12 @@ The set of rules supported are isotropic 2-state Moore-neighbourhood
 cellular automata. This includes familiar Life-like cellular automata,
 in addition to non-totalistic rules expressed in [Hensel notation][3].
 
+## Acknowledgements
+
+Thanks go to Armin Biere for [Kissat][2] and Cameron Desrochers for
+the [lock-free concurrent queue][4].
+
 [1]: https://cp4space.wordpress.com/2018/03/11/a-rather-satisfying-winter/
 [2]: https://github.com/arminbiere/kissat
 [3]: https://www.conwaylife.com/wiki/Hensel_notation
+[4]: https://github.com/cameron314/concurrentqueue
