@@ -11,4 +11,5 @@ test:
     stage: test
     script:
         - bash recompile.sh
-        - ./ikpx2 --help
+        - time ./ikpx2 -x 6 -p 1 -v 'c/3' | tee -i results.txt
+        - grep xq3_3u0228mc53bgzof0882d6koq1 results.txt

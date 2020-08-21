@@ -319,6 +319,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
 
     // DEFAULTS:
     int width = 3;
+    int maximum_width = 60;
     int lookahead = 0;
     int jumpahead = 0;
     int backup_duration = 3600;
@@ -344,6 +345,8 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                 jumpahead = std::stoll(arguments[++i]);
             } else if ((command == "-w") || (command == "--width")) {
                 width = std::stoll(arguments[++i]);
+            } else if ((command == "-x") || (command == "--maximum-width")) {
+                maximum_width = std::stoll(arguments[++i]);
             } else if ((command == "-p") || (command == "--threads")) {
                 threads = std::stoll(arguments[++i]);
             } else {
@@ -385,6 +388,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
 
     while (true) {
         master_loop(hs, to_master, directory, backup_duration);
+        if (hs.search_width >= maximum_width) { break; }
         hs.adaptive_widen();
     }
 
