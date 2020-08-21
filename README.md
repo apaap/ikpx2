@@ -31,6 +31,16 @@ The set of rules supported are isotropic 2-state Moore-neighbourhood
 cellular automata. This includes familiar Life-like cellular automata,
 in addition to non-totalistic rules expressed in [Hensel notation][3].
 
+You can then search for a spaceship of a particular velocity using:
+
+    ./ikpx2 --velocity '(2,1)c/6'
+
+By default, this will use 8 CPU threads. The number of threads can be
+specified by the `--threads` option. For a complete list of options,
+run:
+
+    ./ikpx2 --help
+
 ## Acknowledgements
 
 Thanks go to Armin Biere for [Kissat][2] and Cameron Desrochers for
