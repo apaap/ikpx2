@@ -186,8 +186,15 @@ struct semisearch {
 
         if (complete) {
             auto pat = tree.materialise(lab, p.data());
-            std::cout << "\n#C complete spaceship" << std::endl;
-            ikpx2golly(pat, vel).write_rle(std::cout);
+            pat = ikpx2golly(pat, vel);
+
+            if (pat[vel.p](vel.hd, vel.vd) == pat) {
+                std::cout << "\n#C completed spaceship: \033[34;1m" << pat.apgcode() << "\033[0m" << std::endl;
+            } else {
+                std::cout << "\n#C completed tail" << std::endl;
+            }
+            pat.write_rle(std::cout);
+
         } else if (tree.preds[p].depth > record_depth) {
             record_depth = tree.preds[p].depth;
             auto pat = tree.materialise(lab, p.data());
