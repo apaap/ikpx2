@@ -244,8 +244,9 @@ struct semisearch {
 
 };
 
-void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directory, int backup_duration) {
+void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directory, int backup_duration, bool last_iteration) {
 
+    bool save_at_end = last_iteration;
     std::vector<std::string> checkpoint_names;
 
     {
@@ -256,6 +257,7 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
         ss << "_width_" << searcher.search_width;
         checkpoint_names.push_back(ss.str() + "_odd.bin");
         checkpoint_names.push_back(ss.str() + "_even.bin");
+        checkpoint_names.push_back(ss.str() + "_final.bin");
     }
 
     uint64_t xcount = 0;
@@ -283,20 +285,23 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
         }
 
         auto t2 = std::chrono::steady_clock::now();
-        if (std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count() > backup_duration) {
+        bool finished_queue = (searcher.items_in_aether == 0);
+        bool hour_elapsed = (std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1).count() > backup_duration);
+        save_at_end |= hour_elapsed;
+        finished_queue &= save_at_end;
+
+        if (finished_queue || hour_elapsed) {
+
             t1 = t2;
             std::cout << "Performing backup..." << std::endl;
 
-            auto bfname = checkpoint_names[checkpoint_number];
+            auto bfname = checkpoint_names[finished_queue ? 2 : checkpoint_number];
             FILE* fptr = fopen(bfname.c_str(), "wb");
 
             if (fptr == NULL) {
                 std::cout << "...cannot open file " << bfname << " for writing." << std::endl;
             } else {
-                checkpoint_number += 1;
-                if (checkpoint_number >= checkpoint_names.size()) {
-                    checkpoint_number = 0;
-                }
+                checkpoint_number ^= 1;
 
                 uint64_t bigheader = 216768998249ull;
 
@@ -394,8 +399,9 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     hs.launch_thread(to_master, threads);
 
     while (true) {
-        master_loop(hs, to_master, directory, backup_duration);
-        if (hs.search_width >= maximum_width) { break; }
+        bool last_iteration = (hs.search_width >= maximum_width);
+        master_loop(hs, to_master, directory, backup_duration, last_iteration);
+        if (last_iteration) { break; }
         hs.adaptive_widen();
     }
 
