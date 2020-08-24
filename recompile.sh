@@ -21,7 +21,13 @@ cd ../..
 fi
 
 echo "Configuring lifelib..."
-python mkparams.py $rulearg
+if command -v "python3" &>/dev/null; then
+    echo "Using $(which python3) to configure lifelib..."
+    python3 mkparams.py $rulearg
+else
+    echo "Using $(which python) to configure lifelib..."
+    python mkparams.py $rulearg
+fi
 
 echo "Compiling ikpx2..."
 g++ -O3 -Wall -Wextra -march=native --std=c++11 -Lkissat/build src/main.cpp -lkissat -pthread -o ikpx2
