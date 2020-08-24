@@ -206,7 +206,9 @@ struct semisearch {
 
         if (complete) {
             if (pat[vel.p](vel.hd, vel.vd) == pat) {
-                std::cout << "\n#C completed spaceship: \033[34;1m" << pat.apgcode() << "\033[0m" << std::endl;
+                std::string apgcode = pat.apgcode();
+                std::cout << "\n#C completed spaceship: \033[34;1m" << apgcode << "\033[0m" << std::endl;
+                std::cout << "#C Catagolue URL: https://gol.hatsya.co.uk/object/" << apgcode << "/" << pat.getrule() << std::endl;
             } else {
                 std::cout << "\n#C completed tail" << std::endl;
             }

@@ -33,7 +33,7 @@ in addition to non-totalistic rules expressed in [Hensel notation][3].
 
 You can then search for a spaceship of a particular velocity using:
 
-    ./ikpx2 --velocity '(2,1)c/6'
+    ./ikpx2 --velocity 'c/3'
 
 By default, this will use 8 CPU threads. The number of threads can be
 specified by the `--threads` option. For a complete list of options,
@@ -41,9 +41,20 @@ run:
 
     ./ikpx2 --help
 
+## Example output
+
+The console output from `ikpx2` displays RLEs of the current longest
+partial (whenever the record is broken) and any complete spaceships
+found. When a complete spaceship is reported, the [apgcode][5] of the
+spaceship is included together with the RLE:
+
+![](docs/turtle.png)
+
+This includes a link to the object page on Catagolue.
+
 ## Extending partials
 
-By default, ikpx2 attempts to find complete spaceships. If you instead
+By default, `ikpx2` attempts to find complete spaceships. If you instead
 want to extend a partial, provide an RLE such as:
 
     ./ikpx2 --velocity '(2,1)c/6' docs/almost.rle
@@ -51,11 +62,11 @@ want to extend a partial, provide an RLE such as:
 You can provide multiple files, one after another, if you have several
 partials that you're interested in extending. (They must all be the
 same velocity, matching the command-line argument, and operate in the
-same rule in which ikpx2 has been compiled.)
+same rule in which `ikpx2` has been compiled.)
 
 ## Resuming searches
 
-Every hour (or other period configurable using the `-b` option), ikpx2
+Every hour (or other period configurable using the `-b` option), `ikpx2`
 will save a descriptively-named backup file in the working directory (or
 other directory configurable using the `-d` option). To resume a search,
 just include the backup file on the command line in the same way that
@@ -63,8 +74,8 @@ you can include an RLE on the command line.
 
 When resuming a search, you can load additional partials: if you've
 been running a different search program such as `ntzfind` and want to
-incorporate the results into your ongoing ikpx2 search, wait until it
-produces a backup, terminate the process, and resume ikpx2 from the
+incorporate the results into your ongoing `ikpx2` search, wait until it
+produces a backup, terminate the process, and resume `ikpx2` from the
 backup with the new partial included:
 
     ./ikpx2 -v '(2,1)c/6' backup_name.bin partial_name.rle
@@ -81,3 +92,4 @@ the [lock-free concurrent queue][4].
 [2]: https://github.com/arminbiere/kissat
 [3]: https://www.conwaylife.com/wiki/Hensel_notation
 [4]: https://github.com/cameron314/concurrentqueue
+[5]: https://conwaylife.com/wiki/Apgcode
