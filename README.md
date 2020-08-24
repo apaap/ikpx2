@@ -41,6 +41,37 @@ run:
 
     ./ikpx2 --help
 
+## Extending partials
+
+By default, ikpx2 attempts to find complete spaceships. If you instead
+want to extend a partial, provide an RLE such as:
+
+    ./ikpx2 --velocity '(2,1)c/6' docs/almost.rle
+
+You can provide multiple files, one after another, if you have several
+partials that you're interested in extending. (They must all be the
+same velocity, matching the command-line argument, and operate in the
+same rule in which ikpx2 has been compiled.)
+
+## Resuming searches
+
+Every hour (or other period configurable using the `-b` option), ikpx2
+will save a descriptively-named backup file in the working directory (or
+other directory configurable using the `-d` option). To resume a search,
+just include the backup file on the command line in the same way that
+you can include an RLE on the command line.
+
+When resuming a search, you can load additional partials: if you've
+been running a different search program such as `ntzfind` and want to
+incorporate the results into your ongoing ikpx2 search, wait until it
+produces a backup, terminate the process, and resume ikpx2 from the
+backup with the new partial included:
+
+    ./ikpx2 -v '(2,1)c/6' backup_name.bin partial_name.rle
+
+When you resume a search, you are free to change hyperparameters such
+as the number of CPU threads.
+
 ## Acknowledgements
 
 Thanks go to Armin Biere for [Kissat][2] and Cameron Desrochers for
