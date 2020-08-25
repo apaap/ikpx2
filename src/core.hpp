@@ -203,6 +203,7 @@ struct semisearch {
         }
 
         pat = ikpx2golly(pat, vel);
+        if (pat.empty()) { return; /* no xs0_0 please */ }
 
         if (complete) {
             if (pat[vel.p](vel.hd, vel.vd) == pat) {
