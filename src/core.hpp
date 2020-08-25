@@ -106,7 +106,8 @@ struct semisearch {
 
         search_width += 1;
 
-        std::cout << "Adaptive widening to width " << search_width << std::endl;
+        std::cout << "Adaptive widening to width " << search_width;
+        std::cout << " (treesize = " << tree.preds.size() << ")" << std::endl;
 
         for (auto it = tree.preds.begin(); it != tree.preds.end(); ++it) {
 
