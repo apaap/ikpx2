@@ -64,6 +64,10 @@ partials that you're interested in extending. (They must all be the
 same velocity, matching the command-line argument, and operate in the
 same rule in which `ikpx2` has been compiled.)
 
+The partial in the RLE must move at the specified velocity, either north
+(if orthogonal), north-west (if diagonal), or somewhere in between (if
+oblique). This is the same direction as the partials outputted by `ikpx2`.
+
 ## Resuming searches
 
 Every hour (or other period configurable using the `-b` option), `ikpx2`
