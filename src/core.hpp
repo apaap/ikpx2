@@ -102,6 +102,37 @@ struct semisearch {
         items_in_aether += 1;
     }
 
+    void rundict() {
+
+        std::vector<std::vector<std::map<u64seq, predstruct>::iterator>> work_in_order;
+
+        for (auto it = tree.preds.begin(); it != tree.preds.end(); ++it) {
+
+            size_t depth = it->second.depth;
+
+            if (work_in_order.size() <= depth) {
+                work_in_order.resize(depth+1);
+            }
+
+            work_in_order[depth].push_back(it);
+        }
+
+        uint64_t x = work_in_order.size();
+
+        std::cout << "Profile: depth" << x << " =";
+
+        while (x --> 0) {
+
+            std::cout << " " << work_in_order[x].size();
+
+            for (auto&& it : work_in_order[x]) {
+                enqueue(it->first, it->second.exhausted_width);
+            }
+        }
+
+        std::cout << " = depth0" << std::endl;
+    }
+
     void adaptive_widen() {
 
         search_width += 1;
@@ -109,11 +140,7 @@ struct semisearch {
         std::cout << "Adaptive widening to width " << search_width;
         std::cout << " (treesize = " << tree.preds.size() << ")" << std::endl;
 
-        for (auto it = tree.preds.begin(); it != tree.preds.end(); ++it) {
-
-            enqueue(it->first, it->second.exhausted_width);
-
-        }
+        rundict();
     }
 
     u64seq inject(const uint64_t *fullseq) {
@@ -154,7 +181,7 @@ struct semisearch {
             int n7 = ltransform(robin, vel, results);
 
             for (uint64_t i = 0; i < results.size(); i += n7) {
-                inject(&(results[i]));
+                tree.inject(&(results[i]));
             }
         }
     }
@@ -394,13 +421,16 @@ int run_ikpx(const std::vector<std::string> &arguments) {
 
     WorkQueue to_master;
     semisearch hs(vel, 0, &lt, width, lookahead, jumpahead);
+
+    // load search tree:
     for (auto&& filename : filenames) { hs.load_file(filename); }
+    if (hs.tree.preds.size() == 0) { hs.tree.inject_base_element(); }
 
-    if (hs.tree.preds.size() == 0) {
-        hs.tree.inject_base_element();
-    }
-
+    // launch worker threads:
     hs.launch_thread(to_master, threads);
+
+    // enqueue the work:
+    hs.rundict();
 
     while (true) {
         bool last_iteration = (hs.search_width >= maximum_width);
