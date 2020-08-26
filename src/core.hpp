@@ -63,6 +63,7 @@ struct semisearch {
     int search_width;
     int lookahead;
     int jumpahead;
+    uint32_t mindepth;
 
     int items_in_aether;
     uint32_t record_depth;
@@ -73,9 +74,9 @@ struct semisearch {
 
     std::unordered_set<uint64_t> already_seen;
 
-    semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead) :
+    semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead, uint32_t mindepth) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
-        search_width(search_width), lookahead(lookahead), jumpahead(jumpahead) {
+        search_width(search_width), lookahead(lookahead), jumpahead(jumpahead), mindepth(mindepth) {
 
         search_width = 2;
         std::string rule = apg::get_all_rules()[0];
@@ -121,7 +122,7 @@ struct semisearch {
 
         std::cout << "Profile: depth" << x << " =";
 
-        while (x --> 0) {
+        while (x --> mindepth) {
 
             std::cout << " " << work_in_order[x].size();
 
@@ -376,6 +377,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     int jumpahead = 0;
     int backup_duration = 3600;
     int threads = 8;
+    int minimum_depth = 0;
 
     std::vector<std::string> filenames;
 
@@ -399,6 +401,8 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                 width = std::stoll(arguments[++i]);
             } else if ((command == "-x") || (command == "--maximum-width")) {
                 maximum_width = std::stoll(arguments[++i]);
+            } else if ((command == "-m") || (command == "--minimum-depth")) {
+                minimum_depth = std::stoll(arguments[++i]);
             } else if ((command == "-p") || (command == "--threads")) {
                 threads = std::stoll(arguments[++i]);
             } else {
@@ -429,7 +433,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     apg::lifetree<uint32_t, 1> lt(100);
 
     WorkQueue to_master;
-    semisearch hs(vel, 0, &lt, width, lookahead, jumpahead);
+    semisearch hs(vel, 0, &lt, width, lookahead, jumpahead, minimum_depth);
 
     // load search tree:
     for (auto&& filename : filenames) { hs.load_file(filename); }
