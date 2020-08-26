@@ -275,7 +275,9 @@ struct semisearch {
 
 };
 
-void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directory, int backup_duration, bool last_iteration) {
+template<typename T>
+void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directory,
+                    int backup_duration, bool last_iteration, T &t1) {
 
     bool save_at_end = last_iteration;
     std::vector<std::string> checkpoint_names;
@@ -293,8 +295,6 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
 
     uint64_t xcount = 0;
     uint64_t checkpoint_number = 0;
-
-    auto t1 = std::chrono::steady_clock::now();
 
     while (searcher.items_in_aether) {
 
@@ -323,7 +323,6 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
 
         if (finished_queue || hour_elapsed) {
 
-            t1 = t2;
             std::cout << "Performing backup..." << std::endl;
 
             auto bfname = checkpoint_names[finished_queue ? 2 : checkpoint_number];
@@ -343,6 +342,8 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
 
                 std::cout << "...saved backup file " << bfname << " successfully." << std::endl;
             }
+
+            t1 = std::chrono::steady_clock::now();
         }
     }
 
@@ -432,9 +433,12 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     // enqueue the work:
     hs.rundict();
 
+    // start backup timer:
+    auto t1 = std::chrono::steady_clock::now();
+
     while (true) {
         bool last_iteration = (hs.search_width >= maximum_width);
-        master_loop(hs, to_master, directory, backup_duration, last_iteration);
+        master_loop(hs, to_master, directory, backup_duration, last_iteration, t1);
         if (last_iteration) { break; }
         hs.adaptive_widen();
     }
