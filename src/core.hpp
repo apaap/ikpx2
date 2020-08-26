@@ -131,7 +131,7 @@ struct semisearch {
             }
         }
 
-        std::cout << " = depth0" << std::endl;
+        std::cout << " = depth" << mindepth << std::endl;
     }
 
     void adaptive_widen() {
