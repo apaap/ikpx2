@@ -313,6 +313,10 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
         if ((xcount & 255) == 0) {
             std::cout << xcount << " iterations completed; qsize = " << searcher.items_in_aether;
             std::cout << "; treesize = " << searcher.tree.preds.size() << std::endl;
+
+            if (searcher.record_depth > 0) {
+                searcher.record_depth -= 1;
+            }
         }
 
         auto t2 = std::chrono::steady_clock::now();
