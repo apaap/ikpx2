@@ -222,12 +222,16 @@ struct semisearch {
 
         auto pat = tree.materialise(lab, p.data());
 
-        if (complete) {
+        {
             int64_t bbox[4];
             pat.getrect(bbox);
+
             uint64_t digest = pat.shift(0 - bbox[0], 0 - bbox[1]).digest();
-            if (already_seen.count(digest)) { return; }
+            uint64_t digest2 = complete ? (digest * 3ull) : digest;
+
+            if (already_seen.count(digest2)) { return; }
             already_seen.insert(digest);
+            already_seen.insert(digest2);
         }
 
         pat = ikpx2golly(pat, vel);
