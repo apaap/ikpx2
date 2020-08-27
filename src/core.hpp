@@ -65,6 +65,7 @@ struct semisearch {
     int jumpahead;
     uint32_t mindepth;
 
+    int staleness;
     int items_in_aether;
     uint32_t record_depth;
     std::vector<int> truth_table;
@@ -85,6 +86,7 @@ struct semisearch {
 
         items_in_aether = 0;
         record_depth = 0;
+        staleness = 0;
     }
 
     void enqueue(const u64seq &elem, int exhausted_width) {
@@ -250,6 +252,7 @@ struct semisearch {
             record_depth = tree.preds[p].depth;
             std::cout << "\n#C depth = " << record_depth << std::endl;
         }
+        staleness = 10;
         pat.write_rle(std::cout);
     }
 
@@ -319,7 +322,9 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
             std::cout << xcount << " iterations completed; qsize = " << searcher.items_in_aether;
             std::cout << "; treesize = " << searcher.tree.preds.size() << std::endl;
 
-            if (searcher.record_depth > 0) {
+            if (searcher.staleness > 0) {
+                searcher.staleness -= 1;
+            } else if (searcher.record_depth > 0) {
                 searcher.record_depth -= 1;
             }
         }
