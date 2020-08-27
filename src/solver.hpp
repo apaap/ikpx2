@@ -24,7 +24,9 @@ std::vector<int> solve_using_kissat(const std::vector<int> &cnf, int literals_to
     int res = kissat_solve(solver);
     solution.push_back(res);
 
-    if (res == 10) {
+    if (res == 0) {
+        std::cerr << "\033[33;1mWarning:\033[0m SAT solver reached decision limit" << std::endl;
+    } else if (res == 10) {
         // include satisfying assignments:
         for (int i = 1; i <= literals_to_return; i++) {
             solution.push_back(kissat_value(solver, i));

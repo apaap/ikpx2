@@ -64,6 +64,7 @@ struct semisearch {
     int lookahead;
     int jumpahead;
     uint32_t mindepth;
+    bool full_output;
 
     int staleness;
     int items_in_aether;
@@ -75,9 +76,10 @@ struct semisearch {
 
     std::unordered_set<uint64_t> already_seen;
 
-    semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead, uint32_t mindepth) :
+    semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead, uint32_t mindepth, bool full_output) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
-        search_width(search_width), lookahead(lookahead), jumpahead(jumpahead), mindepth(mindepth) {
+        search_width(search_width), lookahead(lookahead), jumpahead(jumpahead),
+        mindepth(mindepth), full_output(full_output) {
 
         search_width = 2;
         std::string rule = apg::get_all_rules()[0];
@@ -122,7 +124,7 @@ struct semisearch {
 
         uint64_t x = work_in_order.size();
 
-        std::cout << "Profile: depth" << x << " =";
+        std::cout << "# Profile: depth" << x << " =";
 
         while (x --> mindepth) {
 
@@ -140,7 +142,7 @@ struct semisearch {
 
         search_width += 1;
 
-        std::cout << "Adaptive widening to width " << search_width;
+        std::cout << "# Adaptive widening to width " << search_width;
         std::cout << " (treesize = " << tree.preds.size() << ")" << std::endl;
 
         rundict();
@@ -221,7 +223,8 @@ struct semisearch {
         }
 
         if (p.empty()) { return; }
-        if ((!complete) && (tree.preds[p].depth <= record_depth)) { return; }
+
+        if ((!complete) && (!full_output) && (tree.preds[p].depth <= record_depth)) { return; }
 
         auto pat = tree.materialise(lab, p.data());
 
@@ -248,12 +251,13 @@ struct semisearch {
             } else {
                 std::cout << "\n#C completed tail" << std::endl;
             }
-        } else {
+        } else if (!full_output) {
             record_depth = tree.preds[p].depth;
             std::cout << "\n#C depth = " << record_depth << std::endl;
         }
         staleness = 10;
         pat.write_rle(std::cout);
+        std::cout << std::endl;
     }
 
     void launch_thread(WorkQueue &to_master, int iters=1) {
@@ -319,7 +323,7 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
         xcount += 1;
 
         if ((xcount & 255) == 0) {
-            std::cout << xcount << " iterations completed; qsize = " << searcher.items_in_aether;
+            std::cout << "# " << xcount << " iterations completed; qsize = " << searcher.items_in_aether;
             std::cout << "; treesize = " << searcher.tree.preds.size() << std::endl;
 
             if (searcher.staleness > 0) {
@@ -337,13 +341,13 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
 
         if (finished_queue || hour_elapsed) {
 
-            std::cout << "Performing backup..." << std::endl;
+            std::cout << "# Performing backup..." << std::endl;
 
             auto bfname = checkpoint_names[finished_queue ? 2 : checkpoint_number];
             FILE* fptr = fopen(bfname.c_str(), "wb");
 
             if (fptr == NULL) {
-                std::cout << "...cannot open file " << bfname << " for writing." << std::endl;
+                std::cout << "# ...cannot open file " << bfname << " for writing." << std::endl;
             } else {
                 checkpoint_number ^= 1;
 
@@ -354,7 +358,7 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
 
                 fclose(fptr);
 
-                std::cout << "...saved backup file " << bfname << " successfully." << std::endl;
+                std::cout << "# ...saved backup file " << bfname << " successfully." << std::endl;
             }
 
             t1 = std::chrono::steady_clock::now();
@@ -383,6 +387,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     int backup_duration = 3600;
     int threads = 8;
     int minimum_depth = 0;
+    bool full_output = false;
 
     std::vector<std::string> filenames;
 
@@ -410,6 +415,8 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                 minimum_depth = std::stoll(arguments[++i]);
             } else if ((command == "-p") || (command == "--threads")) {
                 threads = std::stoll(arguments[++i]);
+            } else if ((command == "-f") || (command == "--full-output")) {
+                full_output = true;
             } else {
                 ERREXIT("unknown command: " << command);
             }
@@ -424,21 +431,21 @@ int run_ikpx(const std::vector<std::string> &arguments) {
 
     Velocity vel(velocity);
 
-    std::cout << "Valid velocity: \033[32;1m(" << vel.vd << "," << vel.hd << ")c/" << vel.p << "\033[0m" << std::endl;
+    std::cout << "# Valid velocity: \033[32;1m(" << vel.vd << "," << vel.hd << ")c/" << vel.p << "\033[0m" << std::endl;
 
-    std::cout << "Jacobian: [(" << vel.jacobian[0] << ", " << vel.jacobian[1] << "), (" <<
+    std::cout << "# Jacobian: [(" << vel.jacobian[0] << ", " << vel.jacobian[1] << "), (" <<
                                     vel.jacobian[2] << ", " << vel.jacobian[3] << "), (" <<
                                     vel.jacobian[4] << ", " << vel.jacobian[5] << ")]" << std::endl;
 
     if (lookahead == 0) { lookahead = 9 * vel.jacobian[1]; }
     if (jumpahead == 0) { jumpahead = lookahead >> 1; }
 
-    std::cout << "lookahead = " << lookahead << "; jumpahead = " << jumpahead << std::endl;
+    std::cout << "# lookahead = " << lookahead << "; jumpahead = " << jumpahead << std::endl;
 
     apg::lifetree<uint32_t, 1> lt(100);
 
     WorkQueue to_master;
-    semisearch hs(vel, 0, &lt, width, lookahead, jumpahead, minimum_depth);
+    semisearch hs(vel, 0, &lt, width, lookahead, jumpahead, minimum_depth, full_output);
 
     // load search tree:
     for (auto&& filename : filenames) { hs.load_file(filename); }
