@@ -2,6 +2,7 @@
 #include "isosat.hpp"
 #include "ikpxtree.hpp"
 #include "banner.hpp"
+#include "nthread.hpp"
 #include "../cqueue/blockingconcurrentqueue.h"
 
 #include <chrono>
@@ -21,7 +22,24 @@ struct workitem {
 
 typedef moodycamel::BlockingConcurrentQueue<workitem> WorkQueue;
 
-void worker_loop(WorkQueue *from_master, WorkQueue *to_master, Velocity vel, std::vector<int> prime_implicants) {
+struct worker_loop_obj {
+
+    WorkQueue *from_master;
+    WorkQueue *to_master;
+    Velocity vel;
+    std::vector<int> prime_implicants;
+
+    worker_loop_obj(WorkQueue *from_master, WorkQueue *to_master, Velocity vel, std::vector<int> prime_implicants) :
+        from_master(from_master), to_master(to_master), vel(vel), prime_implicants(prime_implicants) { }
+
+};
+
+void worker_loop(worker_loop_obj *obj) {
+
+    WorkQueue *from_master = obj->from_master;
+    WorkQueue *to_master = obj->to_master;
+    Velocity vel = obj->vel;
+    std::vector<int> prime_implicants = obj->prime_implicants;
 
     while (true) {
 
@@ -72,7 +90,8 @@ struct semisearch {
     std::vector<int> truth_table;
     std::vector<int> prime_implicants;
     WorkQueue from_master;
-    std::vector<std::thread> workers;
+    std::vector<NativeThread> workers;
+    std::vector<worker_loop_obj*> wpointers;
 
     std::unordered_set<uint64_t> already_seen;
 
@@ -261,8 +280,11 @@ struct semisearch {
     }
 
     void launch_thread(WorkQueue &to_master, int iters=1) {
+
         for (int i = 0; i < iters; i++) {
-            workers.emplace_back(worker_loop, &from_master, &to_master, vel, prime_implicants);
+            auto wo = new worker_loop_obj(&from_master, &to_master, vel, prime_implicants);
+            workers.emplace_back(worker_loop, wo);
+            wpointers.push_back(wo);
         }
     }
 
@@ -280,9 +302,12 @@ struct semisearch {
 
         for (size_t i = 0; i < workers.size(); i++) {
             workers[i].join();
+            auto wo = wpointers[i];
+            delete wo;
         }
 
         workers.clear();
+        wpointers.clear();
     }
 
 };
