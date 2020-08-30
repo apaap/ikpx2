@@ -51,7 +51,7 @@ struct ikpxtree {
     }
 
     template<typename T>
-    int v2shift(const uint64_t __restrict__ *seq, T &output) const {
+    int v2shift(const uint64_t* __restrict__ seq, T &output) const {
 
         uint64_t shadow = 0;
         for (int i = 0; i < N; i++) {
