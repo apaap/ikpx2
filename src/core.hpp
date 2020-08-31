@@ -462,8 +462,8 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                                     vel.jacobian[2] << ", " << vel.jacobian[3] << "), (" <<
                                     vel.jacobian[4] << ", " << vel.jacobian[5] << ")]" << std::endl;
 
-    if (lookahead == 0) { lookahead = 9 * vel.jacobian[1]; }
-    if (jumpahead == 0) { jumpahead = lookahead >> 1; }
+    if (lookahead == 0) { lookahead = vel.jacobian[1] << 3; }
+    if (jumpahead == 0) { jumpahead = lookahead >> 2; }
 
     std::cout << "# lookahead = " << lookahead << "; jumpahead = " << jumpahead << std::endl;
 
