@@ -105,8 +105,11 @@ struct SubProblem {
     int fullheight;
     int hdiam;
     int vdiam;
+    std::vector<int> polarity;
+    bool impossible;
 
-    SubProblem(int w, int h, int d, int e) : fullwidth(w), fullheight(h), hdiam(d), vdiam(e) { }
+    SubProblem(int w, int h, int d, int e) :
+        fullwidth(w), fullheight(h), hdiam(d), vdiam(e), polarity(w * h + 1), impossible(false) { }
 
     int coords2var(int x, int y) const {
 
@@ -135,12 +138,16 @@ struct SubProblem {
 
     u64seq solve() const {
 
+        if (impossible) { u64seq x; return x; }
+
         auto solution = solve_using_kissat(cnf, fullwidth * fullheight);
         return sol2res(solution);
     }
 
     template<typename Fn>
     int find_all_solutions(Fn lambda) {
+
+        if (impossible) { return 20; }
 
         std::vector<int> unique_literals;
         for (int i = 0; i < fullwidth; i++) {
@@ -159,14 +166,32 @@ struct SubProblem {
      */
     void include_pi(const std::vector<int> &prime_implicants, const std::vector<int> &coords) {
 
+        if (impossible) { return; }
+
         int vars[10];
+        int simp_mask = 0;
+
         for (size_t i = 0; i < 10; i++) {
-            vars[i] = coords2var(coords[2*i], coords[2*i+1]);
+            int var = coords2var(coords[2*i], coords[2*i+1]);
+            vars[i] = var;
+
+            int v = 0;
+            if (polarity[var] == -1) { v = 1; }
+            if (polarity[var] ==  1) { v = 2; }
+
+            simp_mask |= (v << (i*2));
         }
 
+        int simp_mask2 = ((simp_mask & 0x55555) << 1) | ((simp_mask & 0xaaaaa) >> 1);
+
         for (auto&& x : prime_implicants) {
+
+            int y = x &~ simp_mask2; // unit propagation
+            if (y == 0) { impossible = true; return; }
+            if (x & simp_mask) { continue; /* clause already true */ }
+
             for (size_t i = 0; i < 10; i += 1) {
-                int v = (x >> (i*2)) & 3;
+                int v = (y >> (i*2)) & 3;
 
                 if (v == 1) {
                     cnf.push_back(-vars[i]);
@@ -174,6 +199,17 @@ struct SubProblem {
                     cnf.push_back(vars[i]);
                 }
             }
+
+            if ((y & (y - 1)) == 0) {
+                // implied unit clause
+                int var = cnf.back();
+                if (var < 0) {
+                    polarity[-var] = -1;
+                } else {
+                    polarity[var] = 1;
+                }
+            }
+
             cnf.push_back(0);
         }
     }
@@ -212,6 +248,7 @@ struct SubProblem {
         int i = coords2var(x, y);
         cnf.push_back(s ? i : -i);
         cnf.push_back(0);
+        polarity[i] = (s ? 1 : -1);
     }
 
     void gutterise() {
@@ -286,8 +323,11 @@ struct MetaProblem {
                     }
                     sp.set_state(i, j, s);
                 }
+            }
+        }
 
-                if ((i < hradius) || (i >= fullwidth - hradius) || (j < vradius) || (j >= fullheight - vradius)) { continue; }
+        for (int j = vradius; j < fullheight - vradius; j += 1) {
+            for (int i = hradius; i < fullwidth - hradius; i += 1) {
 
                 vars.clear();
 

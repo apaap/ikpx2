@@ -49,7 +49,9 @@ int multisolve(std::vector<int> &cnf, const std::vector<int> &unique_literals, i
         auto solution = solve_using_kissat(cnf, literals_to_return);
         res = solution[0];
         if (res != 10) { break; }
-        for (auto&& x : unique_literals) { cnf.push_back(-solution[x]); }
+        for (auto&& x : unique_literals) {
+            if (solution[x]) { cnf.push_back(-solution[x]); }
+        }
         cnf.push_back(0);
         lambda(solution);
     }
