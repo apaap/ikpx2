@@ -2,6 +2,7 @@
 
 #include <map>
 #include "gollat.hpp"
+#include "maths.hpp"
 #include <stdio.h>
 
 struct predstruct {
@@ -15,10 +16,14 @@ struct predstruct {
 
 static_assert(sizeof(predstruct) == 16, "predstruct should be 16 bytes");
 
+
+typedef std::map<u64seq, predstruct> ikpx_map;
+
+
 struct ikpxtree {
 
     int N;
-    std::map<u64seq, predstruct> preds;
+    ikpx_map preds;
 
     ikpxtree(int tuple_length) : N(tuple_length) { }
 
@@ -102,6 +107,51 @@ struct ikpxtree {
         preds[elem_zero] = ps;
     }
 
+    int16_t inplace_parent(u64seq &elem, const ikpx_map::const_iterator &it) const {
+
+        int16_t shiftamt = it->second.shiftamt;
+
+        for (int i = N-1; i >= 1; i--) {
+            uint64_t row = elem[i-1];
+
+            if (shiftamt > 0) { row <<=  shiftamt; }
+            if (shiftamt < 0) { row >>= -shiftamt; }
+
+            elem[i] = row;
+        }
+
+        elem[0] = it->second.prevrow;
+
+        return shiftamt;
+    }
+
+    bool is_subsumed(const ikpx_map::const_iterator &it, int currwidth) const {
+
+        u64seq elem = it->first;
+
+        if (it->second.prevrow) {
+            if (it->second.shiftamt > 0) { return false; }
+            uint64_t shadow = 0;
+
+            for (int i = 0; i < N; i++) { shadow |= elem[i]; }
+
+            shadow >>= -(it->second.shiftamt);
+            if ((shadow == 0) || (floor_log2(shadow) < floor_log2(it->second.prevrow))) {
+                return false;
+            }
+        }
+
+        inplace_parent(elem, it);
+
+        auto it2 = preds.find(elem);
+
+        if ((it2 == preds.end()) || (it2->second.depth == 0)) {
+            return false;
+        }
+
+        return (it2->second.exhausted_width >= currwidth + 0x4000);
+    }
+
     apg::pattern materialise(lab32_t *lab, const uint64_t *lastelem) const {
 
         u64seq elem(N);
@@ -122,24 +172,14 @@ struct ikpxtree {
                 break;
             }
 
-            int16_t shiftamt = it->second.shiftamt;
-
             for (int i = 0; i < 64; i++) {
                 if ((elem[N-1] >> i) & 1) {
                     res += cell(x + i, y);
                 }
             }
 
-            for (int i = N-1; i >= 1; i--) {
-                uint64_t row = elem[i-1];
+            auto shiftamt = inplace_parent(elem, it);
 
-                if (shiftamt > 0) { row <<=  shiftamt; }
-                if (shiftamt < 0) { row >>= -shiftamt; }
-
-                elem[i] = row;
-            }
-
-            elem[0] = it->second.prevrow;
             x -= shiftamt;
             y -= 1;
         }

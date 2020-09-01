@@ -10,6 +10,39 @@
 
 #define COMMAND_TERMINATE 2
 
+template<typename T>
+struct flat_heap {
+
+    std::vector<std::vector<T> > contents;
+    int64_t elements;
+    size_t x;
+
+    flat_heap() : elements(0), x(0) { }
+
+    void push(size_t depth, T &it) {
+
+        if (contents.size() <= depth) {
+            contents.resize(depth+1);
+        }
+
+        contents[depth].push_back(it);
+
+        if (x > depth) { x = depth; }
+
+        elements += 1;
+    }
+
+    T pop() {
+
+        while (contents[x].empty()) { x += 1; }
+
+        T element = contents[x].back();
+        contents[x].pop_back();
+        elements -= 1;
+        return element;
+    }
+};
+
 struct workitem {
 
     u64seq initial_rows;
@@ -50,6 +83,8 @@ void worker_loop(worker_loop_obj *obj) {
 
         MetaProblem mp(item.initial_rows, vel);
 
+        int total_solutions = 0;
+
         mp.find_all_solutions(item.maximum_width, item.exhausted_width,
             prime_implicants, item.lookahead, [&](const u64seq &svec) {
 
@@ -63,7 +98,11 @@ void worker_loop(worker_loop_obj *obj) {
 
             to_master->enqueue(item2);
 
+            total_solutions += 1;
+
         });
+
+        if (total_solutions == 0) { item.maximum_width |= 0x4000; }
 
         // Inform the master that the work has been completed:
         to_master->enqueue(item);
@@ -83,6 +122,7 @@ struct semisearch {
     int jumpahead;
     uint32_t mindepth;
     bool full_output;
+    flat_heap<ikpx_map::iterator> heap;
 
     int staleness;
     int items_in_aether;
@@ -98,7 +138,7 @@ struct semisearch {
     semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead, uint32_t mindepth, bool full_output) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
         search_width(search_width), lookahead(lookahead), jumpahead(jumpahead),
-        mindepth(mindepth), full_output(full_output) {
+        mindepth(mindepth), full_output(full_output), heap() {
 
         search_width = 2;
         std::string rule = apg::get_all_rules()[0];
@@ -110,51 +150,63 @@ struct semisearch {
         staleness = 0;
     }
 
-    void enqueue(const u64seq &elem, int exhausted_width) {
+    void enheap(ikpx_map::iterator it) {
 
-        if (exhausted_width >= search_width) { return; }
+        size_t depth = it->second.depth;
+        if (depth < mindepth) { return; }
+        int xw = it->second.exhausted_width & 0x3fff;
+        if (xw >= search_width) { return; }
 
-        workitem item;
+        heap.push(depth, it);
+    }
 
-        item.initial_rows = elem;
-        item.exhausted_width = exhausted_width;
-        item.maximum_width = search_width;
-        item.lookahead = lookahead;
-        item.direction = direction;
+    void enqueue_all() {
 
-        from_master.enqueue(item);
-        items_in_aether += 1;
+        int ideal_items = 10 * workers.size();
+
+        while ((items_in_aether < ideal_items) && (heap.elements > 0)) {
+
+            auto it = heap.pop();
+
+            if (tree.is_subsumed(it, search_width)) {
+                it->second.exhausted_width = 0x4000 + search_width;
+                continue;
+            }
+
+            int xw = it->second.exhausted_width & 0x3fff;
+
+            auto elem = it->first;
+
+            workitem item;
+
+            item.initial_rows = elem;
+            item.exhausted_width = xw;
+            item.maximum_width = search_width;
+            item.lookahead = lookahead;
+            item.direction = direction;
+
+            from_master.enqueue(item);
+            items_in_aether += 1;
+        }
     }
 
     void rundict() {
 
-        std::vector<std::vector<std::map<u64seq, predstruct>::iterator>> work_in_order;
-
         for (auto it = tree.preds.begin(); it != tree.preds.end(); ++it) {
-
-            size_t depth = it->second.depth;
-
-            if (work_in_order.size() <= depth) {
-                work_in_order.resize(depth+1);
-            }
-
-            work_in_order[depth].push_back(it);
+            enheap(it);
         }
 
-        uint64_t x = work_in_order.size();
+        uint64_t x = heap.contents.size();
 
         std::cout << "# Profile: depth" << x << " =";
 
         while (x --> mindepth) {
-
-            std::cout << " " << work_in_order[x].size();
-
-            for (auto&& it : work_in_order[x]) {
-                enqueue(it->first, it->second.exhausted_width);
-            }
+            std::cout << " " << heap.contents[x].size();
         }
 
         std::cout << " = depth" << mindepth << std::endl;
+
+        enqueue_all();
     }
 
     void adaptive_widen() {
@@ -177,7 +229,8 @@ struct semisearch {
         if (it->second.exhausted_width == 0) {
             // not previously in map
             it->second.exhausted_width = 1;
-            enqueue(elem, 1);
+            enheap(it);
+            // enqueue(elem, 1);
         }
 
         return elem;
@@ -348,7 +401,8 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
         xcount += 1;
 
         if ((xcount & 255) == 0) {
-            std::cout << "# " << xcount << " iterations completed; qsize = " << searcher.items_in_aether;
+            std::cout << "# " << xcount << " iterations completed: queuesize = ";
+            std::cout << searcher.items_in_aether << "; heapsize = " << searcher.heap.elements;
             std::cout << "; treesize = " << searcher.tree.preds.size() << std::endl;
 
             if (searcher.staleness > 0) {
@@ -357,6 +411,8 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
                 searcher.record_depth -= 1;
             }
         }
+
+        searcher.enqueue_all();
 
         auto t2 = std::chrono::steady_clock::now();
         bool finished_queue = (searcher.items_in_aether == 0);
