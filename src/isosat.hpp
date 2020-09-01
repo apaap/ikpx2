@@ -159,15 +159,19 @@ struct SubProblem {
      */
     void include_pi(const std::vector<int> &prime_implicants, const std::vector<int> &coords) {
 
+        int vars[10];
+        for (size_t i = 0; i < 10; i++) {
+            vars[i] = coords2var(coords[2*i], coords[2*i+1]);
+        }
+
         for (auto&& x : prime_implicants) {
-            for (size_t i = 0; i < coords.size(); i += 2) {
-                int v = (x >> i) & 3;
-                int var = coords2var(coords[i], coords[i+1]);
+            for (size_t i = 0; i < 10; i += 1) {
+                int v = (x >> (i*2)) & 3;
 
                 if (v == 1) {
-                    cnf.push_back(-var);
+                    cnf.push_back(-vars[i]);
                 } else if (v == 2) {
-                    cnf.push_back(var);
+                    cnf.push_back(vars[i]);
                 }
             }
             cnf.push_back(0);
