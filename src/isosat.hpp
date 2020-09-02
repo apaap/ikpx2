@@ -256,6 +256,27 @@ struct SubProblem {
             set_state(fullwidth / 2, j, 0);
         }
     }
+
+    void clear_sides() {
+        for (int j = 0; j < fullheight; j += 1) {
+            for (int i = 0; i < hdiam; i += 1) {
+                set_state(i, j, 0);
+                set_state(fullwidth - i - 1, j, 0);
+            }
+        }
+    }
+
+    void input_row(uint64_t row, int j, int lpad, int middle_bits) {
+
+        for (int i = hdiam; i < fullwidth - hdiam; i += 1) {
+
+            int s = 0;
+            if ((i >= hdiam + lpad) && (i < hdiam + lpad + middle_bits)) {
+                s = 1 & (row >> (i - hdiam - lpad));
+            }
+            set_state(i, j, s);
+        }
+    }
 };
 
 
@@ -311,19 +332,9 @@ struct MetaProblem {
             jacobian[i+1] = (reverse ? -1 : 1) * vel.jacobian[i+1];
         }
 
-        for (int j = 0; j < fullheight; j += 1) {
-            for (int i = 0; i < fullwidth; i += 1) {
-
-                if ((i < hdiam) || (i >= fullwidth - hdiam)) {
-                    sp.set_state(i, j, 0);
-                } else if (j < ir) {
-                    int s = 0;
-                    if ((i >= hdiam + lpad) && (i < hdiam + lpad + middle_bits)) {
-                        s = 1 & (initial_rows[j] >> (i - hdiam - lpad));
-                    }
-                    sp.set_state(i, j, s);
-                }
-            }
+        sp.clear_sides();
+        for (int j = 0; j < ir; j++) {
+            sp.input_row(initial_rows[j], j, lpad, middle_bits);
         }
 
         for (int j = vradius; j < fullheight - vradius; j += 1) {
@@ -345,6 +356,31 @@ struct MetaProblem {
         }
 
         return sp;
+    }
+
+    template<typename Fn, typename UsatFn>
+    void find_multiple_solutions(SubProblem &sp, bool try_completion, Fn lambda, UsatFn lambda2) {
+
+        int solutions = 0;
+        uint64_t ext = 0;
+        int res = sp.find_all_solutions([&](const u64seq &sol) {
+            solutions += 1;
+            lambda(sol);
+            ext = sol[initial_rows.size()];
+        });
+
+        if ((solutions == 0) && (res != 0)) {
+            lambda2();
+        } else if (try_completion) {
+            sp.zerolast();
+            if ((solutions == 1) && (res != 0)) {
+                // unique extension
+                sp.input_row(ext, initial_rows.size(), 0, sp.fullwidth - 2 * sp.hdiam);
+            }
+            u64seq zres = sp.solve();
+            if (zres.size()) { lambda(zres); }
+        }
+
     }
 
     template<typename Fn>
@@ -371,26 +407,12 @@ struct MetaProblem {
 
                 if (((rproblems >> lpad) & 1) == 0) { continue; }
 
-                int solutions = 0;
-
                 int rpad = w - middle_bits - lpad;
-
-                // std::cerr << "# lpad = " << lpad << "; rpad = " << rpad << std::endl;
-
                 auto sp = get_instance(prime_implicants, lpad, rpad, lookahead);
-                int res = sp.find_all_solutions([&](const u64seq &sol) {
-                    solutions += 1;
-                    lambda(sol);
-                });
 
-                if ((solutions == 0) && (res != 0)) {
-                    // UNSATISFIABLE
+                find_multiple_solutions(sp, w == max_width, lambda, [&](){
                     rproblems ^= (1ull << lpad);
-                } else if (w == max_width) {
-                    sp.zerolast();
-                    u64seq zres = sp.solve();
-                    if (zres.size()) { lambda(zres); }
-                }
+                });
             }
 
             rproblems &= (rproblems >> 1);
@@ -406,23 +428,13 @@ struct MetaProblem {
                 int lpad = w - ((middle_bits - 1) >> 1);
 
                 if (lpad >= 0) {
-                    int solutions = 0;
                     auto sp = get_instance(prime_implicants, lpad, lpad, lookahead);
                     sp.symmetrise();
                     sp.gutterise();
 
-                    int res = sp.find_all_solutions([&](const u64seq &sol) {
-                        solutions += 1;
-                        lambda(sol);
-                    });
-
-                    if ((solutions == 0) && (res != 0)) {
+                    find_multiple_solutions(sp, w == max_width, lambda, [&](){
                         try_gutter = false;
-                    } else if (w == max_width) {
-                        sp.zerolast();
-                        u64seq zres = sp.solve();
-                        if (zres.size()) { lambda(zres); }
-                    }
+                    });
                 }
             }
 
@@ -432,23 +444,13 @@ struct MetaProblem {
                 int lpad = w - ((middle_bits + 1) >> 1);
 
                 if (lpad >= 0) {
-                    int solutions = 0;
                     auto sp = get_instance(prime_implicants, lpad, lpad, lookahead);
                     sp.symmetrise();
 
-                    int res = sp.find_all_solutions([&](const u64seq &sol) {
-                        solutions += 1;
-                        lambda(sol);
-                    });
-
-                    if ((solutions == 0) && (res != 0)) {
+                    find_multiple_solutions(sp, w == max_width, lambda, [&](){
                         try_gutter = false;
                         try_symmetric = false;
-                    } else if (w == max_width) {
-                        sp.zerolast();
-                        u64seq zres = sp.solve();
-                        if (zres.size()) { lambda(zres); }
-                    }
+                    });
                 }
             }
         }
