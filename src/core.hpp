@@ -384,6 +384,8 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
     }
 
     uint64_t xcount = 0;
+    uint64_t scount = 0;
+    uint64_t pcount = 0;
     uint64_t checkpoint_number = 0;
 
     while (searcher.items_in_aether) {
@@ -394,14 +396,17 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
         if (item.lookahead) {
             searcher.tree.preds[item.initial_rows].exhausted_width = item.maximum_width;
             searcher.items_in_aether -= 1;
+            pcount += 1;
         } else {
             searcher.inject_partial(item.initial_rows);
+            scount += 1;
         }
 
         xcount += 1;
 
         if ((xcount & 255) == 0) {
-            std::cout << "# " << xcount << " iterations completed: queuesize = ";
+            std::cout << "# " << xcount << " iterations (" << pcount << " problems, ";
+            std::cout << scount << " solutions) completed: queuesize = ";
             std::cout << searcher.items_in_aether << "; heapsize = " << searcher.heap.elements;
             std::cout << "; treesize = " << searcher.tree.preds.size() << std::endl;
 
