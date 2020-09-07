@@ -384,9 +384,10 @@ struct MetaProblem {
     }
 
     template<typename Fn>
-    void find_all_solutions(int max_width, int exhausted_width, const std::vector<int> &prime_implicants, int lookahead, Fn lambda) {
+    int find_all_solutions(int max_width, int exhausted_width, const std::vector<int> &prime_implicants, int lookahead, Fn lambda) {
 
         uint64_t rproblems = 0;
+        int subproblems = 0;
 
         for (int lpad = 0; lpad <= max_width - middle_bits; lpad++) {
             rproblems |= (1ull << lpad);
@@ -413,6 +414,8 @@ struct MetaProblem {
                 find_multiple_solutions(sp, w == max_width, lambda, [&](){
                     rproblems ^= (1ull << lpad);
                 });
+
+                subproblems += 1;
             }
 
             rproblems &= (rproblems >> 1);
@@ -435,6 +438,8 @@ struct MetaProblem {
                     find_multiple_solutions(sp, w == max_width, lambda, [&](){
                         try_gutter = false;
                     });
+
+                    subproblems += 1;
                 }
             }
 
@@ -451,9 +456,13 @@ struct MetaProblem {
                         try_gutter = false;
                         try_symmetric = false;
                     });
+
+                    subproblems += 1;
                 }
             }
         }
+
+        return subproblems;
     }
 };
 

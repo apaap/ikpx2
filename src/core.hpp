@@ -85,7 +85,7 @@ void worker_loop(worker_loop_obj *obj) {
 
         int total_solutions = 0;
 
-        mp.find_all_solutions(item.maximum_width, item.exhausted_width,
+        int subproblems = mp.find_all_solutions(item.maximum_width, item.exhausted_width,
             prime_implicants, item.lookahead, [&](const u64seq &svec) {
 
             workitem item2;
@@ -103,6 +103,7 @@ void worker_loop(worker_loop_obj *obj) {
         });
 
         if (total_solutions == 0) { item.maximum_width |= 0x4000; }
+        item.lookahead = 1 + subproblems; // naughtily reuse field
 
         // Inform the master that the work has been completed:
         to_master->enqueue(item);
@@ -385,6 +386,7 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
 
     uint64_t xcount = 0;
     uint64_t scount = 0;
+    uint64_t bcount = 0;
     uint64_t pcount = 0;
     uint64_t checkpoint_number = 0;
 
@@ -397,6 +399,7 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
             searcher.tree.preds[item.initial_rows].exhausted_width = item.maximum_width;
             searcher.items_in_aether -= 1;
             pcount += 1;
+            bcount += (item.lookahead - 1);
         } else {
             searcher.inject_partial(item.initial_rows);
             scount += 1;
@@ -405,8 +408,8 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
         xcount += 1;
 
         if ((xcount & 255) == 0) {
-            std::cout << "# " << xcount << " iterations (" << pcount << " problems, ";
-            std::cout << scount << " solutions) completed: queuesize = ";
+            std::cout << "# " << xcount << " iterations (" << pcount << " problems, " << bcount;
+            std::cout << " subproblems, " << scount << " solutions) completed: queuesize = ";
             std::cout << searcher.items_in_aether << "; heapsize = " << searcher.heap.elements;
             std::cout << "; treesize = " << searcher.tree.preds.size() << std::endl;
 
