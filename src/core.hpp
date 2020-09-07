@@ -85,7 +85,7 @@ void worker_loop(worker_loop_obj *obj) {
 
         int total_solutions = 0;
 
-        int subproblems = mp.find_all_solutions(item.maximum_width, item.exhausted_width,
+        int subproblems = mp.find_all_solutions(item.maximum_width,
             prime_implicants, item.lookahead, [&](const u64seq &svec) {
 
             workitem item2;

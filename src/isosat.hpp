@@ -358,8 +358,8 @@ struct MetaProblem {
         return sp;
     }
 
-    template<typename Fn, typename UsatFn>
-    void find_multiple_solutions(SubProblem &sp, bool try_completion, Fn lambda, UsatFn lambda2) {
+    template<typename Fn>
+    void find_multiple_solutions(SubProblem &sp, Fn lambda) {
 
         int solutions = 0;
         uint64_t ext = 0;
@@ -370,8 +370,8 @@ struct MetaProblem {
         });
 
         if ((solutions == 0) && (res != 0)) {
-            lambda2();
-        } else if (try_completion) {
+            return;
+        } else {
             sp.zerolast();
             if ((solutions == 1) && (res != 0)) {
                 // unique extension
@@ -380,85 +380,49 @@ struct MetaProblem {
             u64seq zres = sp.solve();
             if (zres.size()) { lambda(zres); }
         }
-
     }
 
     template<typename Fn>
-    int find_all_solutions(int max_width, int exhausted_width, const std::vector<int> &prime_implicants, int lookahead, Fn lambda) {
+    int find_all_solutions(int max_width, const std::vector<int> &prime_implicants, int lookahead, Fn lambda) {
 
-        uint64_t rproblems = 0;
         int subproblems = 0;
 
+        // asymmetric subproblems:
         for (int lpad = 0; lpad <= max_width - middle_bits; lpad++) {
-            rproblems |= (1ull << lpad);
+
+            int rpad = max_width - middle_bits - lpad;
+            auto sp = get_instance(prime_implicants, lpad, rpad, lookahead);
+
+            find_multiple_solutions(sp, lambda);
+            subproblems += 1;
         }
 
-        bool try_gutter = gutter_symmetric;
-        bool try_symmetric = symmetric;
+        // gutter-symmetric subproblems:
+        if (gutter_symmetric) {
 
-        for (int w = max_width; w > exhausted_width; w--) {
+            int lpad = max_width - ((middle_bits - 1) >> 1);
 
-            if (w > 60) {
-                // the maximum asymmetric search width is 60:
-                continue;
-            }
+            if (lpad >= 0) {
+                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead);
+                sp.symmetrise();
+                sp.gutterise();
 
-            // asymmetric subproblems:
-            for (int lpad = 0; lpad <= w - middle_bits; lpad++) {
-
-                if (((rproblems >> lpad) & 1) == 0) { continue; }
-
-                int rpad = w - middle_bits - lpad;
-                auto sp = get_instance(prime_implicants, lpad, rpad, lookahead);
-
-                find_multiple_solutions(sp, w == max_width, lambda, [&](){
-                    rproblems ^= (1ull << lpad);
-                });
-
+                find_multiple_solutions(sp, lambda);
                 subproblems += 1;
             }
+        }
 
-            rproblems &= (rproblems >> 1);
+        // symmetric subproblems:
+        if (symmetric) {
 
-            if (w > 30) {
-                // the maximum symmetric search width is 30:
-                continue;
-            }
+            int lpad = max_width - ((middle_bits + 1) >> 1);
 
-            // gutter-symmetric subproblems:
-            if (try_gutter) {
+            if (lpad >= 0) {
+                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead);
+                sp.symmetrise();
 
-                int lpad = w - ((middle_bits - 1) >> 1);
-
-                if (lpad >= 0) {
-                    auto sp = get_instance(prime_implicants, lpad, lpad, lookahead);
-                    sp.symmetrise();
-                    sp.gutterise();
-
-                    find_multiple_solutions(sp, w == max_width, lambda, [&](){
-                        try_gutter = false;
-                    });
-
-                    subproblems += 1;
-                }
-            }
-
-            // symmetric subproblems:
-            if (try_symmetric) {
-
-                int lpad = w - ((middle_bits + 1) >> 1);
-
-                if (lpad >= 0) {
-                    auto sp = get_instance(prime_implicants, lpad, lpad, lookahead);
-                    sp.symmetrise();
-
-                    find_multiple_solutions(sp, w == max_width, lambda, [&](){
-                        try_gutter = false;
-                        try_symmetric = false;
-                    });
-
-                    subproblems += 1;
-                }
+                find_multiple_solutions(sp, lambda);
+                subproblems += 1;
             }
         }
 
