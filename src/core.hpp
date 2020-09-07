@@ -84,23 +84,28 @@ void worker_loop(worker_loop_obj *obj) {
         MetaProblem mp(item.initial_rows, vel);
 
         int total_solutions = 0;
+        int subproblems = 0;
 
-        int subproblems = mp.find_all_solutions(item.maximum_width,
-            prime_implicants, item.lookahead, [&](const u64seq &svec) {
+        do {
 
-            workitem item2;
+            subproblems += mp.find_all_solutions(item.maximum_width,
+                prime_implicants, item.lookahead, [&](const u64seq &svec) {
 
-            item2.initial_rows = svec;
-            item2.exhausted_width = item.maximum_width;
-            item2.maximum_width = 0;
-            item2.lookahead = 0;
-            item2.direction = item.direction;
+                workitem item2;
 
-            to_master->enqueue(item2);
+                item2.initial_rows = svec;
+                item2.exhausted_width = item.maximum_width;
+                item2.maximum_width = 0;
+                item2.lookahead = 0;
+                item2.direction = item.direction;
 
-            total_solutions += 1;
+                to_master->enqueue(item2);
 
-        });
+                total_solutions += 1;
+
+            });
+
+        } while ((mp.middle_bits++) == 0);
 
         if (total_solutions == 0) { item.maximum_width |= 0x4000; }
         item.lookahead = 1 + subproblems; // naughtily reuse field
