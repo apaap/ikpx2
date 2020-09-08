@@ -311,7 +311,7 @@ struct MetaProblem {
         gutter_symmetric = symmetric && (((shadow >> (middle_bits >> 1)) & 1) == 0);
     }
 
-    SubProblem get_instance(const std::vector<int> &prime_implicants, int lpad, int rpad, int lookahead) {
+    SubProblem get_instance(const std::vector<int> &prime_implicants, int lpad, int rpad, int lookahead, bool symmetric, bool gutter) {
 
         int hradius = vel.hradius();
         int vradius = vel.vradius();
@@ -337,8 +337,13 @@ struct MetaProblem {
             sp.input_row(initial_rows[j], j, lpad, middle_bits);
         }
 
+        if (symmetric) { sp.symmetrise(); }
+        if (gutter) { sp.gutterise(); }
+
+        int maxx = symmetric ? ((fullwidth - 1) >> 1) : (fullwidth - hradius - 1);
+
         for (int j = vradius; j < fullheight - vradius; j += 1) {
-            for (int i = hradius; i < fullwidth - hradius; i += 1) {
+            for (int i = hradius; i <= maxx; i += 1) {
 
                 vars.clear();
 
@@ -391,7 +396,7 @@ struct MetaProblem {
         for (int lpad = 0; lpad <= max_width - middle_bits; lpad++) {
 
             int rpad = max_width - middle_bits - lpad;
-            auto sp = get_instance(prime_implicants, lpad, rpad, lookahead);
+            auto sp = get_instance(prime_implicants, lpad, rpad, lookahead, false, false);
 
             find_multiple_solutions(sp, lambda);
             subproblems += 1;
@@ -403,9 +408,7 @@ struct MetaProblem {
             int lpad = max_width - ((middle_bits - 1) >> 1);
 
             if (lpad >= 0) {
-                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead);
-                sp.symmetrise();
-                sp.gutterise();
+                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, true);
 
                 find_multiple_solutions(sp, lambda);
                 subproblems += 1;
@@ -418,8 +421,7 @@ struct MetaProblem {
             int lpad = max_width - ((middle_bits + 1) >> 1);
 
             if (lpad >= 0) {
-                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead);
-                sp.symmetrise();
+                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, false);
 
                 find_multiple_solutions(sp, lambda);
                 subproblems += 1;
