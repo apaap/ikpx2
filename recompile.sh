@@ -14,7 +14,7 @@ echo "libkissat.a already detected"
 else
 echo "Building kissat solver..."
 cd kissat
-./configure --extreme --sat
+./configure -s --extreme --sat
 cd build
 make libkissat.a
 cd ../..

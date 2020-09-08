@@ -4,6 +4,9 @@
 #include "maths.hpp"
 #include "solver.hpp"
 
+#include <unordered_map>
+#include <set>
+
 void get_all_implicants(const int* truthtab, int* output, int depth) {
 
     if (depth == 0) {
@@ -97,6 +100,45 @@ std::vector<int> truth_table_to_prime_implicants(std::vector<int> &truth_table) 
     return get_prime_implicants(truthtab, 10);
 }
 
+/**
+ * Memoized simplification and subsumption for collections of clauses
+ * arising from a partially-determined napkin.
+ */
+std::vector<int>& simplify_and_subsume(int simp_mask, const std::vector<int> &prime_implicants, std::unordered_map<int, std::vector<int>> &memdict) {
+
+    {
+        auto it = memdict.find(simp_mask);
+        if (it != memdict.end()) { return it->second; }
+    }
+
+    std::vector<int> &res = memdict[simp_mask];
+
+    int simp_mask2 = ((simp_mask & 0x55555) << 1) | ((simp_mask & 0xaaaaa) >> 1);
+
+    std::set<int> encountered;
+
+    // make unique and order:
+    for (auto&& x : prime_implicants) {
+        int y = x &~ simp_mask2; // unit propagation
+        if (x & simp_mask) { continue; /* clause already true */ }
+
+        encountered.insert(y);
+    }
+
+    // subsume:
+    for (auto&& x : encountered) {
+
+        bool subsumed = false;
+        for (auto&& y : res) {
+            if ((x & y) == y) { subsumed = true; break; }
+        }
+
+        if (!subsumed) { res.push_back(x); }
+    }
+
+    return res;
+}
+
 
 struct SubProblem {
 
@@ -161,34 +203,14 @@ struct SubProblem {
         });
     }
 
-    /**
-     * Append clauses to a CNF corresponding to a napkin.
-     */
-    void include_pi(const std::vector<int> &prime_implicants, const std::vector<int> &coords) {
+    void include_pi_inner(const std::vector<int> &prime_implicants, const int* vars) {
 
-        if (impossible) { return; }
-
-        int vars[10];
-        int simp_mask = 0;
-
-        for (size_t i = 0; i < 10; i++) {
-            int var = coords2var(coords[2*i], coords[2*i+1]);
-            vars[i] = var;
-
-            int v = 0;
-            if (polarity[var] == -1) { v = 1; }
-            if (polarity[var] ==  1) { v = 2; }
-
-            simp_mask |= (v << (i*2));
+        if ((prime_implicants.size() == 1) && (prime_implicants[0] == 0)) {
+            impossible = true;
+            return;
         }
 
-        int simp_mask2 = ((simp_mask & 0x55555) << 1) | ((simp_mask & 0xaaaaa) >> 1);
-
-        for (auto&& x : prime_implicants) {
-
-            int y = x &~ simp_mask2; // unit propagation
-            if (y == 0) { impossible = true; return; }
-            if (x & simp_mask) { continue; /* clause already true */ }
+        for (auto&& y : prime_implicants) {
 
             for (size_t i = 0; i < 10; i += 1) {
                 int v = (y >> (i*2)) & 3;
@@ -212,6 +234,37 @@ struct SubProblem {
 
             cnf.push_back(0);
         }
+
+    }
+
+    /**
+     * Append clauses to a CNF corresponding to a napkin.
+     */
+    void include_pi(const std::vector<int> &prime_implicants, const std::vector<int> &coords,
+                    std::unordered_map<int, std::vector<int>> &memdict) {
+
+        if (impossible) { return; }
+
+        int vars[10];
+        int simp_mask = 0;
+
+        for (size_t i = 0; i < 10; i++) {
+            int var = coords2var(coords[2*i], coords[2*i+1]);
+            vars[i] = var;
+
+            int v = 0;
+            if (polarity[var] == -1) { v = 1; }
+            if (polarity[var] ==  1) { v = 2; }
+
+            simp_mask |= (v << (i*2));
+        }
+
+        if (simp_mask) {
+            include_pi_inner(simplify_and_subsume(simp_mask, prime_implicants, memdict), vars);
+        } else {
+            include_pi_inner(prime_implicants, vars);
+        }
+
     }
 
     void identify_vars(int i, int j) {
@@ -311,7 +364,8 @@ struct MetaProblem {
         gutter_symmetric = symmetric && (((shadow >> (middle_bits >> 1)) & 1) == 0);
     }
 
-    SubProblem get_instance(const std::vector<int> &prime_implicants, int lpad, int rpad, int lookahead, bool symmetric, bool gutter) {
+    SubProblem get_instance(const std::vector<int> &prime_implicants, int lpad, int rpad, int lookahead,
+                            bool symmetric, bool gutter, std::unordered_map<int, std::vector<int>> &memdict) {
 
         int hradius = vel.hradius();
         int vradius = vel.vradius();
@@ -356,7 +410,7 @@ struct MetaProblem {
 
                 vars.push_back(i + jacobian[4]);
                 vars.push_back(j + jacobian[5]);
-                sp.include_pi(prime_implicants, vars);
+                sp.include_pi(prime_implicants, vars, memdict);
             }
         }
 
@@ -388,7 +442,8 @@ struct MetaProblem {
     }
 
     template<typename Fn>
-    int find_all_solutions(int max_width, const std::vector<int> &prime_implicants, int lookahead, Fn lambda) {
+    int find_all_solutions(int max_width, const std::vector<int> &prime_implicants, int lookahead, Fn lambda,
+                            std::unordered_map<int, std::vector<int>> &memdict) {
 
         int subproblems = 0;
 
@@ -396,7 +451,7 @@ struct MetaProblem {
         for (int lpad = 0; lpad <= max_width - middle_bits; lpad++) {
 
             int rpad = max_width - middle_bits - lpad;
-            auto sp = get_instance(prime_implicants, lpad, rpad, lookahead, false, false);
+            auto sp = get_instance(prime_implicants, lpad, rpad, lookahead, false, false, memdict);
 
             find_multiple_solutions(sp, lambda);
             subproblems += 1;
@@ -408,7 +463,7 @@ struct MetaProblem {
             int lpad = max_width - ((middle_bits - 1) >> 1);
 
             if (lpad >= 0) {
-                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, true);
+                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, true, memdict);
 
                 find_multiple_solutions(sp, lambda);
                 subproblems += 1;
@@ -421,7 +476,7 @@ struct MetaProblem {
             int lpad = max_width - ((middle_bits + 1) >> 1);
 
             if (lpad >= 0) {
-                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, false);
+                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, false, memdict);
 
                 find_multiple_solutions(sp, lambda);
                 subproblems += 1;

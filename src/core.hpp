@@ -74,6 +74,8 @@ void worker_loop(worker_loop_obj *obj) {
     Velocity vel = obj->vel;
     std::vector<int> prime_implicants = obj->prime_implicants;
 
+    std::unordered_map<int, std::vector<int>> memdict;
+
     while (true) {
 
         workitem item;
@@ -103,7 +105,7 @@ void worker_loop(worker_loop_obj *obj) {
 
                 total_solutions += 1;
 
-            });
+            }, memdict);
 
         } while ((mp.middle_bits++) == 0);
 
