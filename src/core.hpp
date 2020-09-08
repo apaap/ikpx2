@@ -271,7 +271,7 @@ struct semisearch {
         }
     }
 
-    void inject_partial(const u64seq &results) {
+    void inject_partial(u64seq &results) {
 
         u64seq p;
 
@@ -297,6 +297,7 @@ struct semisearch {
                 int j = i - n6;
                 if (j < 0) { j = 0; }
                 p = inject(&(results[j]));
+                results.resize(j + n6 + 1);
                 break;
             }
             p = pc;
@@ -306,7 +307,7 @@ struct semisearch {
 
         if ((!complete) && (!full_output) && (tree.preds[p].depth <= record_depth)) { return; }
 
-        auto pat = tree.materialise(lab, p.data());
+        auto pat = tree.materialise(lab, results);
 
         {
             int64_t bbox[4];

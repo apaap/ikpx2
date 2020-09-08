@@ -152,18 +152,25 @@ struct ikpxtree {
         return (it2->second.exhausted_width >= currwidth + 0x4000);
     }
 
-    apg::pattern materialise(lab32_t *lab, const uint64_t *lastelem) const {
+    apg::pattern materialise(lab32_t *lab, const u64seq &elements) const {
 
         u64seq elem(N);
-        for (int i = 0; i < N; i++) { elem[i] = lastelem[i]; }
+        int x = v2shift(elements.data(), elem) - 1;
 
         std::string rule = apg::get_all_rules()[0];
 
         apg::pattern res(lab, "", rule);
         apg::pattern cell(lab, "o!", rule);
 
+        for (int j = N-1; j < ((int) elements.size()); j++) {
+            for (int i = 0; i < 64; i++) {
+                if ((elements[j] >> i) & 1) {
+                    res += cell(i, j-N+1);
+                }
+            }
+        }
+
         int y = 0;
-        int x = 0;
 
         while (true) {
             auto it = preds.find(elem);
