@@ -336,7 +336,7 @@ struct semisearch {
             record_depth = tree.preds[p].depth;
             std::cout << "\n#C depth = " << record_depth << std::endl;
         }
-        staleness = 10;
+        staleness = 24;
         pat.write_rle(std::cout);
         std::cout << std::endl;
     }
