@@ -239,7 +239,6 @@ struct semisearch {
 
         int range = jumpahead;
         int n6 = vel.vradius() * 2;
-
         uint64_t shadow = 0;
 
         for (size_t i = results.size() - n6; i < results.size(); i++) {
@@ -286,6 +285,11 @@ struct semisearch {
         pat = ikpx2golly(pat, vel);
         if (pat.empty()) { return; /* no xs0_0 please */ }
 
+        shadow = 1;
+        results.resize(n6);
+        for (auto&& x : results) { shadow |= x; }
+        int breadth = floor_log2(shadow) + 1;
+
         if (complete) {
             if (pat[vel.p](vel.hd, vel.vd) == pat) {
                 std::string apgcode = pat.apgcode();
@@ -298,6 +302,7 @@ struct semisearch {
             record_depth = tree.preds[p].depth;
             std::cout << "\n#C depth = " << record_depth << std::endl;
         }
+        std::cout << "#C breadth = " << breadth << std::endl;
         staleness = 24;
         pat.write_rle(std::cout);
         std::cout << std::endl;
