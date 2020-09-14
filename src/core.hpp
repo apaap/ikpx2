@@ -3,45 +3,13 @@
 #include "ikpxtree.hpp"
 #include "banner.hpp"
 #include "nthread.hpp"
+#include "heap.hpp"
 #include "../cqueue/blockingconcurrentqueue.h"
 
 #include <chrono>
 #include <unordered_set>
 
 #define COMMAND_TERMINATE 2
-
-template<typename T>
-struct flat_heap {
-
-    std::vector<std::vector<T> > contents;
-    int64_t elements;
-    size_t x;
-
-    flat_heap() : elements(0), x(0) { }
-
-    void push(size_t depth, T &it) {
-
-        if (contents.size() <= depth) {
-            contents.resize(depth+1);
-        }
-
-        contents[depth].push_back(it);
-
-        if (x > depth) { x = depth; }
-
-        elements += 1;
-    }
-
-    T pop() {
-
-        while (contents[x].empty()) { x += 1; }
-
-        T element = contents[x].back();
-        contents[x].pop_back();
-        elements -= 1;
-        return element;
-    }
-};
 
 struct workitem {
 
@@ -130,7 +98,7 @@ struct semisearch {
     int jumpahead;
     uint32_t mindepth;
     bool full_output;
-    flat_heap<ikpx_map::iterator> heap;
+    double_heap<ikpx_map::iterator> heap;
 
     int staleness;
     int items_in_aether;
@@ -165,7 +133,11 @@ struct semisearch {
         int xw = it->second.exhausted_width & 0x3fff;
         if (xw >= search_width) { return; }
 
-        heap.push(depth, it);
+        uint64_t shadow = 1;
+        for (auto&& x : it->first) { shadow |= x; }
+        size_t breadth = floor_log2(shadow);
+
+        heap.push(breadth, depth, it);
     }
 
     void enqueue_all() {
@@ -203,16 +175,6 @@ struct semisearch {
         for (auto it = tree.preds.begin(); it != tree.preds.end(); ++it) {
             enheap(it);
         }
-
-        uint64_t x = heap.contents.size();
-
-        std::cout << "# Profile: depth" << x << " =";
-
-        while (x --> mindepth) {
-            std::cout << " " << heap.contents[x].size();
-        }
-
-        std::cout << " = depth" << mindepth << std::endl;
 
         enqueue_all();
     }
