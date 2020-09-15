@@ -285,10 +285,11 @@ struct semisearch {
         pat = ikpx2golly(pat, vel);
         if (pat.empty()) { return; /* no xs0_0 please */ }
 
-        shadow = 1;
+        shadow = 0;
         results.resize(n6);
         for (auto&& x : results) { shadow |= x; }
-        int breadth = floor_log2(shadow) + 1;
+
+        int breadth = (shadow) ? (floor_log2(shadow) + 1 - __builtin_ctzll(shadow)) : 0;
 
         if (complete) {
             if (pat[vel.p](vel.hd, vel.vd) == pat) {
