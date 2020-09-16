@@ -1,7 +1,7 @@
 #pragma once
 
-#define SOLVER_KISSAT 1
-#define SOLVER_CADICAL 2
+#define SOLVER_CADICAL 1
+#define SOLVER_KISSAT 2
 
 // ------------------------------------
 

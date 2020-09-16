@@ -42,10 +42,10 @@ struct PreferredSolver {
         double best = 0.0;
 
         // with probability 1/8, choose a random solver;
-        // with probability 2/8, choose the best solver;
-        // with probability 5/8, compromise between these:
+        // with probability 3/8, choose the best solver;
+        // with probability 4/8, compromise between these:
         bool fully_random = (xorshifted < 0x2000000000000000ull);
-        bool randomise    = (xorshifted < 0xc000000000000000ull);
+        bool randomise    = (xorshifted < 0xa000000000000000ull);
 
         for (uint64_t i = 0; i < timings.size(); i++) {
 
@@ -53,7 +53,7 @@ struct PreferredSolver {
 
                 xorshifted *= 11400714819323198485ull;
 
-                double loss = 10000.0;
+                double loss = 100.0;
                 if (!fully_random) { loss += get_loss(i); }
                 if (randomise) { loss *= ((double) xorshifted); }
 
@@ -529,7 +529,7 @@ struct MetaProblem {
             int rpad = max_width - middle_bits - lpad;
             auto sp = get_instance(prime_implicants, lpad, rpad, lookahead, false, false, memdict);
 
-            find_multiple_solutions(sp, lambda, solvers[3 + lpad], solvers[0]);
+            find_multiple_solutions(sp, lambda, solvers[3 + middle_bits], solvers[0]);
             subproblems += 1;
         }
 

@@ -136,8 +136,8 @@ struct semisearch {
             if ((i == 0) || ((SOLVER_MASK >> i) & 1)) {
                 switch (i) {
                     case 0 : std::cout << " trivial" ; break;
-                    case 1 : std::cout << ", kissat" ; break;
-                    case 2 : std::cout << ", cadical"; break;
+                    case 1 : std::cout << ", cadical"; break;
+                    case 2 : std::cout << ", kissat" ; break;
                     default: std::cout << ", unknown"; break;
                 }
                 std::cout << "=" << solvers[0].timings[i];
