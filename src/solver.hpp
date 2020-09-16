@@ -1,15 +1,17 @@
 #pragma once
 
 #define SOLVER_KISSAT 1
-// #define SOLVER_CADICAL 2
+#define SOLVER_CADICAL 2
 
 // ------------------------------------
 
-#ifdef SOLVER_KISSAT
 extern "C" {
 #include "../kissat/src/kissat.h"
-}
+
+#ifdef SOLVER_CADICAL
+#include "../cadical/src/ccadical.h"
 #endif
+}
 
 const static int SOLVER_MASK =
 #ifdef SOLVER_KISSAT
@@ -55,7 +57,8 @@ std::vector<int> solve_using_kissat(const std::vector<int> &cnf, int literals_to
 
 template<typename Fn>
 int multisolve(std::vector<int> &cnf, int solver_idx, const std::vector<int> &unique_literals,
-                const std::vector<int> &zero_literals, int literals_to_return, Fn lambda) {
+                const std::vector<int> &zero_literals, int literals_to_return, Fn lambda,
+                int max_decisions=10000000) {
 
     int res = 0;
 
@@ -68,7 +71,7 @@ int multisolve(std::vector<int> &cnf, int solver_idx, const std::vector<int> &un
         std::vector<int> ulits;
 
         while (true) {
-            auto solution = solve_using_kissat(cnf, literals_to_return);
+            auto solution = solve_using_kissat(cnf, literals_to_return, max_decisions);
             res = solution[0];
             if (res != 10) { break; }
             total_sols += 1;
@@ -109,8 +112,44 @@ int multisolve(std::vector<int> &cnf, int solver_idx, const std::vector<int> &un
 
     #ifdef SOLVER_CADICAL
     if (solver_idx == SOLVER_CADICAL) {
-        // TODO incremental solve
 
+        auto solver = ccadical_init();
+
+        for (auto&& x : cnf) {
+            ccadical_add(solver, x);
+        }
+
+        for (auto&& x : zero_literals) {
+            ccadical_assume(solver, -x);
+        }
+
+        bool zero_run = true;
+
+        do {
+
+            ccadical_limit(solver, "decisions", max_decisions);
+            res = ccadical_solve(solver);
+            if (res == 0) {
+                std::cerr << "\033[33;1mWarning:\033[0m SAT solver reached decision limit" << std::endl;
+            } else if (res == 10) {
+                std::vector<int> solution;
+                solution.push_back(res);
+                // include satisfying assignments:
+                for (int i = 1; i <= literals_to_return; i++) {
+                    solution.push_back(ccadical_val(solver, i));
+                }
+                for (auto&& x : unique_literals) {
+                    if (solution[x]) {
+                        ccadical_add(solver, -solution[x]);
+                    }
+                }
+                ccadical_add(solver, 0);
+                lambda(solution);
+            }
+
+            if (zero_run) { zero_run = false; res = 10; }
+
+        } while (res == 10);
     }
     #endif
 

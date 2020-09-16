@@ -128,6 +128,25 @@ struct semisearch {
         staleness = 0;
     }
 
+    void print_solver_stats() {
+
+        std::cout << "# solvers invoked:";
+
+        for (uint64_t i = 0; i < solvers[0].timings.size(); i++) {
+            if ((i == 0) || ((SOLVER_MASK >> i) & 1)) {
+                switch (i) {
+                    case 0 : std::cout << " trivial" ; break;
+                    case 1 : std::cout << ", kissat" ; break;
+                    case 2 : std::cout << ", cadical"; break;
+                    default: std::cout << ", unknown"; break;
+                }
+                std::cout << "=" << solvers[0].timings[i];
+            }
+        }
+
+        std::cout << std::endl;
+    }
+
     void enheap(ikpx_map::iterator it) {
 
         size_t depth = it->second.depth;
@@ -391,23 +410,7 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
             std::cout << searcher.items_in_aether << "; heapsize = " << searcher.heap.elements;
             std::cout << "; treesize = " << searcher.tree.preds.size() << std::endl;
 
-            if ((xcount & 4095) == 0) {
-                std::cout << "# solvers invoked:";
-
-                for (uint64_t i = 0; i < searcher.solvers[0].timings.size(); i++) {
-                    if ((i == 0) || ((SOLVER_MASK >> i) & 1)) {
-                        switch (i) {
-                            case 0 : std::cout << " trivial" ; break;
-                            case 1 : std::cout << ", kissat" ; break;
-                            case 2 : std::cout << ", cadical"; break;
-                            default: std::cout << ", unknown"; break;
-                        }
-                        std::cout << "=" << searcher.solvers[0].timings[i];
-                    }
-                }
-
-                std::cout << std::endl;
-            }
+            if ((xcount & 4095) == 0) { searcher.print_solver_stats(); }
 
             if (searcher.staleness > 0) {
                 searcher.staleness -= 1;
@@ -548,6 +551,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     while (true) {
         bool last_iteration = (hs.search_width >= maximum_width);
         master_loop(hs, to_master, directory, backup_duration, last_iteration, t1);
+        hs.print_solver_stats();
         if (last_iteration) { break; }
         hs.adaptive_widen();
     }

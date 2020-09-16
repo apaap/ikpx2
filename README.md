@@ -7,7 +7,7 @@ responsible for the [discovery of Sir Robin][1].
 
 The main differences between `ikpx2` and the original `ikpx` are:
 
- - Uses a better SAT solver (Armin Biere's [Kissat][2]);
+ - Uses better SAT solvers (Armin Biere's [Kissat][2] and [CaDiCaL][6]);
  - Runs in a single multithreaded process, so no communication overhead;
  - Supports arbitrary isotropic rules, not just B3/S23;
  - Incorporates symmetry when searching orthogonal velocities;
@@ -89,11 +89,12 @@ as the number of CPU threads.
 
 ## Acknowledgements
 
-Thanks go to Armin Biere for [Kissat][2] and Cameron Desrochers for
-the [lock-free concurrent queue][4].
+Thanks go to Armin Biere for [Kissat][2] and [CaDiCaL][6], and to Cameron
+Desrochers for the [lock-free concurrent queue][4].
 
 [1]: https://cp4space.wordpress.com/2018/03/11/a-rather-satisfying-winter/
 [2]: https://github.com/arminbiere/kissat
 [3]: https://www.conwaylife.com/wiki/Hensel_notation
 [4]: https://github.com/cameron314/concurrentqueue
 [5]: https://conwaylife.com/wiki/Apgcode
+[6]: https://github.com/arminbiere/cadical
