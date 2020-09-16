@@ -150,6 +150,8 @@ int multisolve(std::vector<int> &cnf, int solver_idx, const std::vector<int> &un
             if (zero_run) { zero_run = false; res = 10; }
 
         } while (res == 10);
+
+        ccadical_release(solver);
     }
     #endif
 
