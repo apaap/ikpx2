@@ -344,11 +344,12 @@ struct MetaProblem {
     bool symmetric;
     bool gutter_symmetric;
     int middle_bits;
+    uint64_t shadow;
 
     MetaProblem(const u64seq &initial_rows, const Velocity &vel, bool reverse=false) :
         initial_rows(initial_rows), vel(vel), reverse(reverse) {
 
-        uint64_t shadow = 0;
+        shadow = 0;
         for (auto&& x : initial_rows) { shadow |= x; }
 
         middle_bits = floor_log2(1 | (shadow << 1));
@@ -447,8 +448,10 @@ struct MetaProblem {
 
         int subproblems = 0;
 
+        int maxlpad = (shadow ? max_width : 0) - middle_bits;
+
         // asymmetric subproblems:
-        for (int lpad = 0; lpad <= max_width - middle_bits; lpad++) {
+        for (int lpad = 0; lpad <= maxlpad; lpad++) {
 
             int rpad = max_width - middle_bits - lpad;
             auto sp = get_instance(prime_implicants, lpad, rpad, lookahead, false, false, memdict);
