@@ -1,8 +1,24 @@
 #pragma once
 
+#define SOLVER_KISSAT 1
+// #define SOLVER_CADICAL 2
+
+// ------------------------------------
+
+#ifdef SOLVER_KISSAT
 extern "C" {
 #include "../kissat/src/kissat.h"
 }
+#endif
+
+const static int SOLVER_MASK =
+#ifdef SOLVER_KISSAT
+(1 << SOLVER_KISSAT) +
+#endif
+#ifdef SOLVER_CADICAL
+(1 << SOLVER_CADICAL) +
+#endif
+0;
 
 #include <iostream>
 #include <vector>
@@ -38,25 +54,66 @@ std::vector<int> solve_using_kissat(const std::vector<int> &cnf, int literals_to
 }
 
 template<typename Fn>
-int multisolve(std::vector<int> &cnf, const std::vector<int> &unique_literals, int literals_to_return, Fn lambda) {
+int multisolve(std::vector<int> &cnf, int solver_idx, const std::vector<int> &unique_literals,
+                const std::vector<int> &zero_literals, int literals_to_return, Fn lambda) {
 
-    // TODO use incremental solving once Armin Biere has implemented it.
-
-    size_t origsize = cnf.size();
     int res = 0;
 
-    while (true) {
-        auto solution = solve_using_kissat(cnf, literals_to_return);
-        res = solution[0];
-        if (res != 10) { break; }
-        for (auto&& x : unique_literals) {
-            if (solution[x]) { cnf.push_back(-solution[x]); }
-        }
-        cnf.push_back(0);
-        lambda(solution);
-    }
+    #ifdef SOLVER_KISSAT
+    if (solver_idx == SOLVER_KISSAT) {
 
-    cnf.resize(origsize);
+        size_t origsize = cnf.size();
+
+        int total_sols = 0;
+        std::vector<int> ulits;
+
+        while (true) {
+            auto solution = solve_using_kissat(cnf, literals_to_return);
+            res = solution[0];
+            if (res != 10) { break; }
+            total_sols += 1;
+            for (auto&& x : unique_literals) {
+                if (solution[x]) {
+                    cnf.push_back(-solution[x]);
+                    ulits.push_back(solution[x]);
+                }
+            }
+            cnf.push_back(0);
+            lambda(solution);
+        }
+
+        cnf.resize(origsize);
+
+        if (total_sols > 0) {
+
+            // try to find completion:
+
+            if (total_sols == 1) {
+                for (auto&& x : ulits) {
+                    cnf.push_back(x);
+                    cnf.push_back(0);
+                }
+            }
+
+            for (auto&& x : zero_literals) {
+                cnf.push_back(-x);
+                cnf.push_back(0);
+            }
+
+            auto solution = solve_using_kissat(cnf, literals_to_return);
+            if (solution[0] == 10) { lambda(solution); }
+            cnf.resize(origsize);
+        }
+    }
+    #endif
+
+    #ifdef SOLVER_CADICAL
+    if (solver_idx == SOLVER_CADICAL) {
+        // TODO incremental solve
+
+    }
+    #endif
+
     return res;
 }
 

@@ -6,7 +6,6 @@
 #include "heap.hpp"
 #include "../cqueue/blockingconcurrentqueue.h"
 
-#include <chrono>
 #include <unordered_set>
 
 #define COMMAND_TERMINATE 2
@@ -25,18 +24,20 @@ typedef moodycamel::BlockingConcurrentQueue<workitem> WorkQueue;
 
 struct worker_loop_obj {
 
+    PreferredSolver *solvers;
     WorkQueue *from_master;
     WorkQueue *to_master;
     Velocity vel;
     std::vector<int> prime_implicants;
 
-    worker_loop_obj(WorkQueue *from_master, WorkQueue *to_master, Velocity vel, std::vector<int> prime_implicants) :
-        from_master(from_master), to_master(to_master), vel(vel), prime_implicants(prime_implicants) { }
+    worker_loop_obj(PreferredSolver *solvers, WorkQueue *from_master, WorkQueue *to_master, Velocity vel, std::vector<int> prime_implicants) :
+        solvers(solvers), from_master(from_master), to_master(to_master), vel(vel), prime_implicants(prime_implicants) { }
 
 };
 
 void worker_loop(worker_loop_obj *obj) {
 
+    PreferredSolver *solvers = obj->solvers;
     WorkQueue *from_master = obj->from_master;
     WorkQueue *to_master = obj->to_master;
     Velocity vel = obj->vel;
@@ -73,7 +74,7 @@ void worker_loop(worker_loop_obj *obj) {
 
                 total_solutions += 1;
 
-            }, memdict);
+            }, memdict, solvers);
 
         } while ((mp.middle_bits++) == 0);
 
@@ -99,6 +100,7 @@ struct semisearch {
     uint32_t mindepth;
     bool full_output;
     double_heap<ikpx_map::iterator> heap;
+    std::vector<PreferredSolver> solvers;
 
     int staleness;
     int items_in_aether;
@@ -114,7 +116,7 @@ struct semisearch {
     semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead, uint32_t mindepth, bool full_output) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
         search_width(search_width), lookahead(lookahead), jumpahead(jumpahead),
-        mindepth(mindepth), full_output(full_output), heap() {
+        mindepth(mindepth), full_output(full_output), heap(), solvers(70) {
 
         search_width = 2;
         std::string rule = apg::get_all_rules()[0];
@@ -312,7 +314,7 @@ struct semisearch {
     void launch_thread(WorkQueue &to_master, int iters=1) {
 
         for (int i = 0; i < iters; i++) {
-            auto wo = new worker_loop_obj(&from_master, &to_master, vel, prime_implicants);
+            auto wo = new worker_loop_obj(&(solvers[0]), &from_master, &to_master, vel, prime_implicants);
             workers.emplace_back(worker_loop, wo);
             wpointers.push_back(wo);
         }
@@ -388,6 +390,24 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
             std::cout << " subproblems, " << scount << " solutions) completed: queuesize = ";
             std::cout << searcher.items_in_aether << "; heapsize = " << searcher.heap.elements;
             std::cout << "; treesize = " << searcher.tree.preds.size() << std::endl;
+
+            if ((xcount & 4095) == 0) {
+                std::cout << "# solvers invoked:";
+
+                for (uint64_t i = 0; i < searcher.solvers[0].timings.size(); i++) {
+                    if ((i == 0) || ((SOLVER_MASK >> i) & 1)) {
+                        switch (i) {
+                            case 0 : std::cout << " trivial" ; break;
+                            case 1 : std::cout << ", kissat" ; break;
+                            case 2 : std::cout << ", cadical"; break;
+                            default: std::cout << ", unknown"; break;
+                        }
+                        std::cout << "=" << searcher.solvers[0].timings[i];
+                    }
+                }
+
+                std::cout << std::endl;
+            }
 
             if (searcher.staleness > 0) {
                 searcher.staleness -= 1;

@@ -1,3 +1,4 @@
 ikpx2
 *.bin
 test*
+solvers/*.a

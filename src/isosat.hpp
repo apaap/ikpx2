@@ -5,7 +5,81 @@
 #include "solver.hpp"
 
 #include <unordered_map>
+#include <chrono>
+#include <atomic>
 #include <set>
+#include <iostream>
+
+
+struct PreferredSolver {
+
+    std::vector<std::atomic<uint64_t>> timings;
+
+    PreferredSolver() : timings(1 + floor_log2(SOLVER_MASK)) { }
+
+    double get_loss(int i) const {
+
+        uint64_t f = timings[i];
+        double loss = 0;
+        if (f & 0xffff) {
+            loss = (((double) (f >> 16))) / ((double) (f & 0xffff));
+        }
+        return loss;
+
+    }
+
+    int choose(const u64seq &seed) const {
+
+        // create random seed:
+        uint64_t h = 42;
+        for (auto&& x : seed) {
+            h = h * 6364136223846793005ull + x;
+        }
+        uint64_t xorshifted = ((h >> ((h >> 59u) + 5u)) ^ h);
+        xorshifted *= 11400714819323198485ull;
+
+        int idx = -1;
+        double best = 0.0;
+
+        // with probability 1/8, choose a random solver;
+        // with probability 2/8, choose the best solver;
+        // with probability 5/8, compromise between these:
+        bool fully_random = (xorshifted < 0x2000000000000000ull);
+        bool randomise    = (xorshifted < 0xc000000000000000ull);
+
+        for (uint64_t i = 0; i < timings.size(); i++) {
+
+            if ((SOLVER_MASK >> i) & 1) {
+
+                xorshifted *= 11400714819323198485ull;
+
+                double loss = 10000.0;
+                if (!fully_random) { loss += get_loss(i); }
+                if (randomise) { loss *= ((double) xorshifted); }
+
+                if ((idx == -1) || (loss < best)) {
+                    idx = i;
+                    best = loss;
+                }
+            }
+        }
+
+        return idx;
+    }
+
+    void update(int solver_idx, uint64_t micros) {
+
+        timings[solver_idx] += (micros << 16) + 1;
+
+        uint64_t u = timings[solver_idx];
+
+        if (u & 0xff0000000000ff00ull) {
+            // rescale every 128 iterations:
+            timings[solver_idx] = (u >> 1) & 0x00ffffffffff00ffull;
+        }
+    }
+};
+
 
 void get_all_implicants(const int* truthtab, int* output, int depth) {
 
@@ -187,7 +261,7 @@ struct SubProblem {
     }
 
     template<typename Fn>
-    int find_all_solutions(Fn lambda) {
+    int find_all_solutions(Fn lambda, int solver_idx) {
 
         if (impossible) { return 20; }
 
@@ -196,7 +270,14 @@ struct SubProblem {
             unique_literals.push_back(coords2var(i, vdiam));
         }
 
-        return multisolve(cnf, unique_literals, fullwidth * fullheight, [&](std::vector<int> &solution) {
+        std::vector<int> zero_literals;
+        for (int j = fullheight - vdiam; j < fullheight; j++) {
+            for (int i = hdiam; i < fullwidth - hdiam; i++) {
+                zero_literals.push_back(coords2var(i, j));
+            }
+        }
+
+        return multisolve(cnf, solver_idx, unique_literals, zero_literals, fullwidth * fullheight, [&](std::vector<int> &solution) {
 
             lambda(sol2res(solution));
 
@@ -285,14 +366,6 @@ struct SubProblem {
         for (int j = 0; j < fullheight; j++) {
             for (int i = hdiam; i < fullwidth / 2; i++) {
                 identify_vars(coords2var(i, j), coords2var(fullwidth - 1 - i, j));
-            }
-        }
-    }
-
-    void zerolast() {
-        for (int j = fullheight - vdiam; j < fullheight; j++) {
-            for (int i = hdiam; i < fullwidth - hdiam; i++) {
-                set_state(i, j, 0);
             }
         }
     }
@@ -419,32 +492,32 @@ struct MetaProblem {
     }
 
     template<typename Fn>
-    void find_multiple_solutions(SubProblem &sp, Fn lambda) {
+    void find_multiple_solutions(SubProblem &sp, Fn lambda, PreferredSolver& solver, PreferredSolver& scounts) {
 
-        int solutions = 0;
-        uint64_t ext = 0;
-        int res = sp.find_all_solutions([&](const u64seq &sol) {
-            solutions += 1;
-            lambda(sol);
-            ext = sol[initial_rows.size()];
-        });
-
-        if ((solutions == 0) && (res != 0)) {
+        if (sp.impossible) {
+            // UNSAT obtained in preprocessing:
+            scounts.timings[0] += 1;
             return;
-        } else {
-            sp.zerolast();
-            if ((solutions == 1) && (res != 0)) {
-                // unique extension
-                sp.input_row(ext, initial_rows.size(), 0, sp.fullwidth - 2 * sp.hdiam);
-            }
-            u64seq zres = sp.solve();
-            if (zres.size()) { lambda(zres); }
         }
+
+        int solver_idx = solver.choose(initial_rows);
+
+        auto start = std::chrono::high_resolution_clock::now();
+
+        sp.find_all_solutions(lambda, solver_idx);
+
+        auto end = std::chrono::high_resolution_clock::now();
+
+        int64_t micros = std::chrono::duration_cast<std::chrono::microseconds>( end - start ).count();
+        if (micros < 1) { micros = 1; }
+
+        solver.update(solver_idx, micros);
+        scounts.timings[solver_idx] += 1;
     }
 
     template<typename Fn>
     int find_all_solutions(int max_width, const std::vector<int> &prime_implicants, int lookahead, Fn lambda,
-                            std::unordered_map<int, std::vector<int>> &memdict) {
+                            std::unordered_map<int, std::vector<int>> &memdict, PreferredSolver *solvers) {
 
         int subproblems = 0;
 
@@ -456,7 +529,7 @@ struct MetaProblem {
             int rpad = max_width - middle_bits - lpad;
             auto sp = get_instance(prime_implicants, lpad, rpad, lookahead, false, false, memdict);
 
-            find_multiple_solutions(sp, lambda);
+            find_multiple_solutions(sp, lambda, solvers[3 + lpad], solvers[0]);
             subproblems += 1;
         }
 
@@ -468,7 +541,7 @@ struct MetaProblem {
             if (lpad >= 0) {
                 auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, true, memdict);
 
-                find_multiple_solutions(sp, lambda);
+                find_multiple_solutions(sp, lambda, solvers[2], solvers[0]);
                 subproblems += 1;
             }
         }
@@ -481,7 +554,7 @@ struct MetaProblem {
             if (lpad >= 0) {
                 auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, false, memdict);
 
-                find_multiple_solutions(sp, lambda);
+                find_multiple_solutions(sp, lambda, solvers[1], solvers[0]);
                 subproblems += 1;
             }
         }
