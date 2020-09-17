@@ -252,6 +252,18 @@ struct SubProblem {
         return res;
     }
 
+    void avoid(uint64_t row) {
+
+        for (int i = hdiam; i < fullwidth - hdiam; i++) {
+            if ((row >> (i - hdiam)) & 1) {
+                cnf.push_back(-coords2var(i, vdiam));
+            } else {
+                cnf.push_back( coords2var(i, vdiam));
+            }
+        }
+        cnf.push_back(0);
+    }
+
     u64seq solve() const {
 
         if (impossible) { u64seq x; return x; }
@@ -523,13 +535,30 @@ struct MetaProblem {
 
         int maxlpad = (shadow ? max_width : 0) - middle_bits;
 
+        std::vector<uint64_t> last_seen;
+
         // asymmetric subproblems:
-        for (int lpad = 0; lpad <= maxlpad; lpad++) {
+        for (int lpad = maxlpad; lpad >= 0; lpad--) {
+
+            {
+                std::vector<uint64_t> halved;
+                for (auto&& x : last_seen) {
+                    if ((x & 1) == 0) { halved.push_back(x >> 1); }
+                }
+                last_seen.swap(halved);
+            }
 
             int rpad = max_width - middle_bits - lpad;
             auto sp = get_instance(prime_implicants, lpad, rpad, lookahead, false, false, memdict);
 
-            find_multiple_solutions(sp, lambda, solvers[3 + middle_bits], solvers[0]);
+            for (auto&& x : last_seen) { sp.avoid(x); }
+
+            find_multiple_solutions(sp, [&](const u64seq &solution) {
+
+                last_seen.push_back(solution[sp.vdiam]);
+                lambda(solution);
+
+            }, solvers[3 + middle_bits], solvers[0]);
             subproblems += 1;
         }
 
