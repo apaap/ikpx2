@@ -35,6 +35,9 @@ struct PreferredSolver {
         for (auto&& x : seed) {
             h = h * 6364136223846793005ull + x;
         }
+        for (uint64_t i = 0; i < timings.size(); i++) {
+            h = h * 6364136223846793005ull + timings[i];
+        }
         uint64_t xorshifted = ((h >> ((h >> 59u) + 5u)) ^ h);
         xorshifted *= 11400714819323198485ull;
 
