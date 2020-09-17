@@ -59,7 +59,7 @@ void worker_loop(worker_loop_obj *obj) {
 
         do {
 
-            subproblems += mp.find_all_solutions(item.maximum_width,
+            int x = mp.find_all_solutions(item.maximum_width,
                 prime_implicants, item.lookahead, [&](const u64seq &svec) {
 
                 workitem item2;
@@ -75,6 +75,9 @@ void worker_loop(worker_loop_obj *obj) {
                 total_solutions += 1;
 
             }, memdict, solvers);
+
+            if (x < 0) { x = -x; total_solutions += 1; }
+            subproblems += x;
 
         } while ((mp.middle_bits++) == 0);
 
@@ -116,7 +119,7 @@ struct semisearch {
     semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead, uint32_t mindepth, bool full_output) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
         search_width(search_width), lookahead(lookahead), jumpahead(jumpahead),
-        mindepth(mindepth), full_output(full_output), heap(), solvers(70) {
+        mindepth(mindepth), full_output(full_output), heap(), solvers(2016) {
 
         search_width = 2;
         std::string rule = apg::get_all_rules()[0];

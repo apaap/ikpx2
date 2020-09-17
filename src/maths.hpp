@@ -1,6 +1,13 @@
 #pragma once
 #include <stdint.h>
 
+// Cantor's pairing function:
+int cantor_pair(int a, int b) {
+
+    return (((a + b) * (a + b + 1)) >> 1) + b;
+
+}
+
 // Reverse each byte in an integer:
 uint64_t uint64_reverse(uint64_t x) {
     uint64_t y = (x >> 32) | (x << 32); 

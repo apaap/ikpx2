@@ -507,19 +507,19 @@ struct MetaProblem {
     }
 
     template<typename Fn>
-    void find_multiple_solutions(SubProblem &sp, Fn lambda, PreferredSolver& solver, PreferredSolver& scounts) {
+    int find_multiple_solutions(SubProblem &sp, Fn lambda, PreferredSolver& solver, PreferredSolver& scounts) {
 
         if (sp.impossible) {
             // UNSAT obtained in preprocessing:
             scounts.timings[0] += 1;
-            return;
+            return 20;
         }
 
         int solver_idx = solver.choose(initial_rows);
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        sp.find_all_solutions(lambda, solver_idx);
+        int res = sp.find_all_solutions(lambda, solver_idx);
 
         auto end = std::chrono::high_resolution_clock::now();
 
@@ -528,14 +528,18 @@ struct MetaProblem {
 
         solver.update(solver_idx, micros);
         scounts.timings[solver_idx] += 1;
+
+        return res;
     }
 
     template<typename Fn>
-    int find_all_solutions(int max_width, const std::vector<int> &prime_implicants, int lookahead, Fn lambda,
+    int find_all_solutions(int curr_width, const std::vector<int> &prime_implicants, int lookahead, Fn lambda,
                             std::unordered_map<int, std::vector<int>> &memdict, PreferredSolver *solvers) {
 
+        bool gave_up = false;
         int subproblems = 0;
-
+        int max_width = curr_width;
+        if (max_width > 64) { max_width = 64; }
         int maxlpad = (shadow ? max_width : 0) - middle_bits;
 
         std::vector<uint64_t> last_seen;
@@ -556,40 +560,48 @@ struct MetaProblem {
 
             for (auto&& x : last_seen) { sp.avoid(x); }
 
-            find_multiple_solutions(sp, [&](const u64seq &solution) {
+            if (find_multiple_solutions(sp, [&](const u64seq &solution) {
 
                 last_seen.push_back(solution[sp.vdiam]);
                 lambda(solution);
 
-            }, solvers[3 + middle_bits], solvers[0]);
+            }, solvers[cantor_pair(lpad + 1, rpad + 1)], solvers[0]) == 0) { gave_up = true; }
             subproblems += 1;
         }
 
-        // gutter-symmetric subproblems:
-        if (gutter_symmetric) {
+        if (max_width > 32) { max_width = 32; }
 
-            int lpad = max_width - ((middle_bits - 1) >> 1);
+        if (max_width <= 31) {
+            // gutter-symmetric subproblems:
+            if (gutter_symmetric) {
 
-            if (lpad >= 0) {
-                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, true, memdict);
+                int lpad = max_width - ((middle_bits - 1) >> 1);
 
-                find_multiple_solutions(sp, lambda, solvers[2], solvers[0]);
-                subproblems += 1;
+                if (lpad >= 0) {
+                    auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, true, memdict);
+
+                    if (find_multiple_solutions(sp, lambda, solvers[cantor_pair(lpad + 1, 0)], solvers[0]) == 0) { gave_up = true; }
+                    subproblems += 1;
+                }
             }
         }
 
-        // symmetric subproblems:
-        if (symmetric) {
+        if (curr_width <= 62) {
+            // symmetric subproblems:
+            if (symmetric) {
 
-            int lpad = max_width - ((middle_bits + 1) >> 1);
+                int lpad = max_width - ((middle_bits + 1) >> 1);
 
-            if (lpad >= 0) {
-                auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, false, memdict);
+                if (lpad >= 0) {
+                    auto sp = get_instance(prime_implicants, lpad, lpad, lookahead, true, false, memdict);
 
-                find_multiple_solutions(sp, lambda, solvers[1], solvers[0]);
-                subproblems += 1;
+                    if (find_multiple_solutions(sp, lambda, solvers[cantor_pair(0, lpad + 1)], solvers[0]) == 0) { gave_up = true; }
+                    subproblems += 1;
+                }
             }
         }
+
+        if (gave_up) { subproblems = -subproblems; }
 
         return subproblems;
     }

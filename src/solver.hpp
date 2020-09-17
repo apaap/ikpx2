@@ -43,7 +43,7 @@ std::vector<int> solve_using_kissat(const std::vector<int> &cnf, int literals_to
     solution.push_back(res);
 
     if (res == 0) {
-        std::cerr << "\033[33;1mWarning:\033[0m SAT solver reached decision limit" << std::endl;
+        std::cerr << "\033[33;1mWarning:\033[0m SAT solver 'kissat' reached decision limit" << std::endl;
     } else if (res == 10) {
         // include satisfying assignments:
         for (int i = 1; i <= literals_to_return; i++) {
@@ -130,7 +130,7 @@ int multisolve(std::vector<int> &cnf, int solver_idx, const std::vector<int> &un
             ccadical_limit(solver, "decisions", max_decisions);
             res = ccadical_solve(solver);
             if (res == 0) {
-                std::cerr << "\033[33;1mWarning:\033[0m SAT solver reached decision limit" << std::endl;
+                std::cerr << "\033[33;1mWarning:\033[0m SAT solver 'cadical' reached decision limit" << std::endl;
             } else if (res == 10) {
                 std::vector<int> solution;
                 solution.push_back(res);
