@@ -9,6 +9,7 @@
 #include <unordered_set>
 
 #define COMMAND_TERMINATE 2
+#define VERSION_HEADER 54092838759273
 
 struct workitem {
 
@@ -241,9 +242,12 @@ struct semisearch {
         uint64_t bigheader = 0;
         fread(&bigheader, 8, 1, fptr);
 
-        if (bigheader == 216768998249ull) {
+        if (bigheader == VERSION_HEADER) {
             tree.read_from_file(fptr);
             fclose(fptr);
+        } else if (((uint32_t) bigheader) == ((uint32_t) VERSION_HEADER)) {
+            fclose(fptr);
+            ERREXIT("backup file " << filename << " was produced by an incompatible version of ikpx2.");
         } else {
             fclose(fptr);
 
@@ -442,7 +446,7 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
             } else {
                 checkpoint_number ^= 1;
 
-                uint64_t bigheader = 216768998249ull;
+                uint64_t bigheader = VERSION_HEADER;
 
                 fwrite(&bigheader, 8, 1, fptr);
                 searcher.tree.write_to_file(fptr);

@@ -43,6 +43,13 @@ int inv2x2(const std::vector<int> &M, std::vector<int> &N) {
 }
 
 
+int sqdist(int x, int y) {
+
+    return x * x + y * y;
+
+}
+
+
 std::vector<int> get_transformation(int vd, int hd, int p) {
 
     int vdp = apg::euclid_gcd(vd, p);
@@ -63,8 +70,12 @@ std::vector<int> get_transformation(int vd, int hd, int p) {
         ERREXIT("horizontal displacement cannot exceed vertical displacement");
     }
 
+    // Find the first lattice basis vector:
+
     int du_dx =  vd / apg::euclid_gcd(vd, hd);
     int du_dy = -hd / apg::euclid_gcd(vd, hd);
+
+    // Find a second lattice basis vector:
 
     int dv_dx = 0;
     int dv_dy = 0;
@@ -85,6 +96,16 @@ std::vector<int> get_transformation(int vd, int hd, int p) {
         if (apg::euclid_gcd(det, dv_dt) != 1) { continue; }
 
         break;
+    }
+
+    // Orthogonalise the second lattice basis vector against the first:
+
+    while (sqdist(dv_dy, dv_dx) > sqdist(dv_dy + du_dy, dv_dx + du_dx)) {
+        dv_dy += du_dy; dv_dx += du_dx;
+    }
+
+    while (sqdist(dv_dy, dv_dx) > sqdist(dv_dy - du_dy, dv_dx - du_dx)) {
+        dv_dy -= du_dy; dv_dx -= du_dx;
     }
 
     return {du_dy, dv_dy,
