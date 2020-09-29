@@ -151,18 +151,20 @@ struct semisearch {
         std::cout << std::endl;
     }
 
-    void enheap(ikpx_map::iterator it) {
+    bool enheap(ikpx_map::iterator it) {
+
+        int xw = it->second.exhausted_width & 0x3fff;
+        if (xw >= search_width) { return false; }
 
         size_t depth = it->second.depth;
-        if (depth < mindepth) { return; }
-        int xw = it->second.exhausted_width & 0x3fff;
-        if (xw >= search_width) { return; }
+        if (depth >= mindepth) {
+            uint64_t shadow = 1;
+            for (auto&& x : it->first) { shadow |= x; }
+            size_t breadth = floor_log2(shadow);
+            heap.push(breadth, depth, it);
+        }
 
-        uint64_t shadow = 1;
-        for (auto&& x : it->first) { shadow |= x; }
-        size_t breadth = floor_log2(shadow);
-
-        heap.push(breadth, depth, it);
+        return true;
     }
 
     void enqueue_all() {
@@ -197,9 +199,29 @@ struct semisearch {
 
     void rundict() {
 
+        std::vector<uint64_t> all_tasks;
+        std::vector<uint64_t> unfinished_tasks;
+
         for (auto it = tree.preds.begin(); it != tree.preds.end(); ++it) {
-            enheap(it);
+            size_t depth = it->second.depth;
+            bool unfinished = enheap(it);
+
+            if (depth >= all_tasks.size()) {
+                all_tasks.resize(depth + 1);
+                unfinished_tasks.resize(depth + 1);
+            }
+
+            all_tasks[depth] += 1;
+            unfinished_tasks[depth] += unfinished;
         }
+
+        std::cout << "# Profile: depth0 =";
+
+        for (uint64_t i = 0; i < all_tasks.size(); i++) {
+            std::cout << " " << unfinished_tasks[i] << "/" << all_tasks[i];
+        }
+
+        std::cout << " = depth" << (all_tasks.size() - 1) << std::endl;
 
         enqueue_all();
     }
