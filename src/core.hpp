@@ -218,7 +218,10 @@ struct semisearch {
         std::cout << "# Profile: depth0 =";
 
         for (uint64_t i = 0; i < all_tasks.size(); i++) {
-            std::cout << " " << unfinished_tasks[i] << "/" << all_tasks[i];
+            std::cout << " " << unfinished_tasks[i];
+            if (all_tasks[i] != unfinished_tasks[i]) {
+                std::cout << "/" << all_tasks[i];
+            }
         }
 
         std::cout << " = depth" << (all_tasks.size() - 1) << std::endl;
