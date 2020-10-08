@@ -9,7 +9,7 @@
 #include <unordered_set>
 
 #define COMMAND_TERMINATE 2
-#define VERSION_HEADER 54092838759273
+#define VERSION_HEADER 55192350387049
 
 struct workitem {
 
@@ -557,7 +557,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                                     vel.jacobian[2] << ", " << vel.jacobian[3] << "), (" <<
                                     vel.jacobian[4] << ", " << vel.jacobian[5] << ")]" << std::endl;
 
-    if (lookahead == 0) { lookahead = (vel.jacobian[1] + vel.jacobian[3]) * 6 + 2; }
+    if (lookahead == 0) { lookahead = vel.jacobian[1] * 8 + 2; }
     if (jumpahead == 0) { jumpahead = lookahead >> 3; }
 
     std::cout << "# lookahead = " << lookahead << "; jumpahead = " << jumpahead << std::endl;

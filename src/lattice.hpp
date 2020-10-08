@@ -43,11 +43,8 @@ int inv2x2(const std::vector<int> &M, std::vector<int> &N) {
 }
 
 
-int sqdist(int x, int y) {
-
-    return x * x + y * y;
-
-}
+int l1dist(int x, int y) { return std::abs(x) + std::abs(y); }
+int sqdist(int x, int y) { return (x * x) + (y * y); }
 
 
 std::vector<int> get_transformation(int vd, int hd, int p) {
@@ -98,13 +95,25 @@ std::vector<int> get_transformation(int vd, int hd, int p) {
         break;
     }
 
-    // Orthogonalise the second lattice basis vector against the first:
+    // Reduce the second lattice basis vector against the first.
+    // We use L1 distance as a primary objective and L2 distance
+    // as a tie-breaker, which yields a total order on Z^2 / D8_1:
+    // (0, 0) < (1, 0) < (1, 1) < (2, 0) < (2, 1) < (3, 0) <
+    // (2, 2) < (3, 1) < (4, 0) < (3, 2) < (4, 1) < (5, 0) < ...
 
     while (sqdist(dv_dy, dv_dx) > sqdist(dv_dy + du_dy, dv_dx + du_dx)) {
         dv_dy += du_dy; dv_dx += du_dx;
     }
 
     while (sqdist(dv_dy, dv_dx) > sqdist(dv_dy - du_dy, dv_dx - du_dx)) {
+        dv_dy -= du_dy; dv_dx -= du_dx;
+    }
+
+    while (l1dist(dv_dy, dv_dx) > l1dist(dv_dy + du_dy, dv_dx + du_dx)) {
+        dv_dy += du_dy; dv_dx += du_dx;
+    }
+
+    while (l1dist(dv_dy, dv_dx) > l1dist(dv_dy - du_dy, dv_dx - du_dx)) {
         dv_dy -= du_dy; dv_dx -= du_dx;
     }
 
