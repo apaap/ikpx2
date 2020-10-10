@@ -50,6 +50,7 @@ fi
 cd ..
 
 echo "Compiling ikpx2..."
-g++ -O3 -Wall -Wextra -march=native --std=c++11 -Lsolvers src/main.cpp -lkissat -lcadical -pthread -o ikpx2 -g
+sources="apgmera/includes/md5.cpp apgmera/includes/happyhttp.cpp src/main.cpp"
+g++ -O3 -Wall -Wextra -march=native --std=c++11 -Lsolvers $sources -lkissat -lcadical -pthread -o ikpx2 -g
 
 printf "\n\033[32;1m **** build process completed successfully **** \033[0m\n"
