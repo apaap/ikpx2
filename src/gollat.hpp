@@ -5,6 +5,7 @@
 
 typedef apg::lifetree_abstract<uint32_t> lab32_t;
 
+
 std::vector<int> truth_table_for_rule(lab32_t *lab, std::string rule) {
 
     std::vector<int> truthtab;
@@ -55,28 +56,80 @@ apg::pattern golly2ikpx(apg::pattern &x, const Velocity &vel) {
 }
 
 
-apg::pattern ikpx2golly(apg::pattern &x, const Velocity &vel) {
+std::vector<std::set<std::pair<int32_t, int32_t>>> ikpx2phases(apg::pattern &x, const Velocity &vel) {
 
     int pop = x.totalPopulation();
     std::vector<int64_t> coords(pop*2);
     x.get_coords(coords.data());
 
+    std::vector<std::set<std::pair<int32_t, int32_t>>> phases(vel.p);
+
+    for (int i = 0; i < vel.p; i++) {
+        for (int j = 0; j < pop; j++) {
+            int ou = coords[2*j] + vel.jacobian[4] * i;
+            int ov = coords[2*j+1] + vel.jacobian[5] * i;
+
+            int oy = vel.iacobjan[0] * ou + vel.iacobjan[2] * ov;
+            int ox = vel.iacobjan[1] * ou + vel.iacobjan[3] * ov;
+
+            if ((ox % vel.det == 0) && (oy % vel.det == 0)) {
+                phases[i].emplace(oy / vel.det, ox / vel.det);
+            }
+        }
+    }
+    
+    return phases;
+}
+
+
+apg::pattern ikpx2golly(apg::pattern &x, const Velocity &vel) {
+
+    auto phases = ikpx2phases(x, vel);
     apg::pattern golly(x.getlab(), "", x.getrule());
     apg::pattern onecell(x.getlab(), "o!", x.getrule());
 
-    for (int j = 0; j < pop; j++) {
-        int ou = coords[2*j];
-        int ov = coords[2*j+1];
-
-        int oy = vel.iacobjan[0] * ou + vel.iacobjan[2] * ov;
-        int ox = vel.iacobjan[1] * ou + vel.iacobjan[3] * ov;
-
-        if ((ox % vel.det == 0) && (oy % vel.det == 0)) {
-            golly += onecell(ox / vel.det, oy / vel.det);
-        }
+    for (auto&& x : phases[0]) {
+        golly += onecell(x.second, x.first);
     }
 
     return golly;
+}
+
+std::string cells2rle(const std::set<std::pair<int32_t, int32_t>> &cells, const std::string &rule, bool isSeed) {
+
+    int32_t minx = 999999999;
+    int32_t miny = 999999999;
+    int32_t maxx = -minx;
+    int32_t maxy = -miny;
+
+    for (auto&& cell : cells) {
+        minx = std::min(minx, cell.second);
+        miny = std::min(miny, cell.first);
+        maxx = std::max(maxx, cell.second);
+        maxy = std::max(maxy, cell.first);
+    }
+
+    std::ostringstream outstream;
+
+    if (isSeed) {
+        outstream << '-';
+    } else {
+        outstream << "x = " << (maxx - minx + 1) << ", y = " << (maxy - miny + 1) << ", rule = " << rule << std::endl;
+    }
+
+    apg::RleWriter rw(outstream, (isSeed ? '-' : '\n'), 66, 1);
+
+    for (auto&& cell : cells) {
+        uint64_t y = cell.first - miny;
+        uint64_t x = cell.second - minx;
+        rw.addcell(x, y, 1);
+    }
+
+    rw.finalise();
+
+    if (isSeed) { outstream << std::endl; }
+
+    return outstream.str();
 }
 
 

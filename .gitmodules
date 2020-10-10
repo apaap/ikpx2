@@ -1,9 +1,6 @@
 [submodule "kissat"]
 	path = kissat
 	url = https://github.com/arminbiere/kissat.git
-[submodule "lifelib"]
-	path = lifelib
-	url = https://gitlab.com/apgoucher/lifelib.git
 [submodule "cadical"]
 	path = cadical
 	url = https://github.com/arminbiere/cadical.git
