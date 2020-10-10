@@ -4,6 +4,11 @@
 
 rulearg=`echo "$@" | grep -o "\\-\\-rule [^ ]*" | sed "s/\\-\\-rule\\ //"`
 
+if ((${#rulearg} == 0)); then
+rulearg="b3s23"
+echo "Rule unspecified; assuming b3s23."
+fi
+
 set -e
 
 echo "Updating submodules..."
@@ -37,10 +42,10 @@ echo "Configuring lifelib..."
 cd apgmera
 if command -v "python3" &>/dev/null; then
     echo "Using $(which python3) to configure lifelib..."
-    python3 mkparams.py $rulearg
+    python3 mkparams.py $rulearg "ikpx2_stdin"
 else
     echo "Using $(which python) to configure lifelib..."
-    python mkparams.py $rulearg
+    python mkparams.py $rulearg "ikpx2_stdin"
 fi
 cd ..
 

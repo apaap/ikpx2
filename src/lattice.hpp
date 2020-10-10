@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../lifelib/hashtrees/numtheory.h"
-#include "../lifelib/ssplit.h"
+#include "../apgmera/lifelib/hashtrees/numtheory.h"
+#include "../apgmera/lifelib/ssplit.h"
 #include <iostream>
 #include <cmath>
 

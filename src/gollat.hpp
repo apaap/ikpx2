@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../lifelib/pattern2.h"
+#include "../apgmera/lifelib/pattern2.h"
 #include "lattice.hpp"
 
 typedef apg::lifetree_abstract<uint32_t> lab32_t;
