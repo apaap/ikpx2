@@ -34,6 +34,7 @@ cp "cadical/build/libcadical.a" solvers
 fi
 
 echo "Configuring lifelib..."
+cd apgmera
 if command -v "python3" &>/dev/null; then
     echo "Using $(which python3) to configure lifelib..."
     python3 mkparams.py $rulearg
@@ -41,6 +42,7 @@ else
     echo "Using $(which python) to configure lifelib..."
     python mkparams.py $rulearg
 fi
+cd ..
 
 echo "Compiling ikpx2..."
 g++ -O3 -Wall -Wextra -march=native --std=c++11 -Lsolvers src/main.cpp -lkissat -lcadical -pthread -o ikpx2 -g
