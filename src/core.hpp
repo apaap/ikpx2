@@ -107,6 +107,10 @@ struct semisearch {
     std::vector<PreferredSolver> solvers;
     SoupSearcher globalSoup;
     apg::base_classifier<BITPLANES> cfier;
+    int soupsPerHaul;
+    int maxcount;
+
+    int soupsElapsed;
 
     int staleness;
     int items_in_aether;
@@ -119,13 +123,13 @@ struct semisearch {
 
     std::unordered_set<uint64_t> already_seen;
 
-    semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead, uint32_t mindepth, bool full_output) :
+    semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead, uint32_t mindepth, bool full_output, int soupsPerHaul) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
         search_width(search_width), lookahead(lookahead), jumpahead(jumpahead),
         mindepth(mindepth), full_output(full_output), heap(), solvers(2016),
-        globalSoup(), cfier(lab, apg::get_all_rules()[0]) {
+        globalSoup(), cfier(lab, apg::get_all_rules()[0]), soupsPerHaul(soupsPerHaul), maxcount(soupsPerHaul) {
 
-        globalSoup.tilesProcessed = 0;
+        globalSoup.tilesProcessed = 0; soupsElapsed = 0;
 
         search_width = 2;
         std::string rule = apg::get_all_rules()[0];
@@ -291,7 +295,7 @@ struct semisearch {
         }
     }
 
-    void inject_partial(u64seq &results) {
+    void inject_partial(u64seq &results, std::string &seed, const std::string &key) {
 
         u64seq p;
 
@@ -356,7 +360,32 @@ struct semisearch {
                 // create seed:
                 std::string suffix = cells2seed(phase);
 
-                globalSoup.censusSoup("test", suffix, cfier, vbw);
+                globalSoup.censusSoup(seed, suffix, cfier, vbw);
+                soupsElapsed += 1;
+
+                if ((soupsElapsed % 1000) == 0) {
+                    std::cout << "# " << soupsElapsed << " soups completed." << std::endl;
+                }
+
+                if (soupsElapsed >= maxcount) {
+                    std::cout << "----------------------------------------------------------------------" << std::endl;
+                    std::cout << "# " << soupsElapsed << " soups completed." << std::endl;
+                    std::cout << "Attempting to contact payosha256." << std::endl;
+                    std::string payoshaResponse = globalSoup.submitResults(key, seed, soupsElapsed, false, false);
+
+                    if (payoshaResponse.length() == 0) {
+                        std::cout << "Connection was unsuccessful." << std::endl;
+                        maxcount += soupsPerHaul;
+                    } else {
+                        std::cout << "Connection was successful." << std::endl;
+                        maxcount = soupsPerHaul;
+                        soupsElapsed = 0;
+                        SoupSearcher newSearcher;
+                        globalSoup = newSearcher;
+                        globalSoup.tilesProcessed = 0;
+                        seed = reseed(seed);
+                    }
+                }
             }
         }
 
@@ -425,7 +454,7 @@ struct semisearch {
 
 template<typename T>
 void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directory,
-                    int backup_duration, bool last_iteration, T &t1) {
+                    int backup_duration, bool last_iteration, T &t1, std::string &seed, const std::string &key) {
 
     bool save_at_end = last_iteration;
     std::vector<std::string> checkpoint_names;
@@ -458,7 +487,7 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
             pcount += 1;
             bcount += (item.lookahead - 1);
         } else {
-            searcher.inject_partial(item.initial_rows);
+            searcher.inject_partial(item.initial_rows, seed, key);
             scount += 1;
         }
 
@@ -535,7 +564,11 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     int backup_duration = 3600;
     int threads = 8;
     int minimum_depth = 0;
+    int soups_per_haul = 100000;
     bool full_output = false;
+
+    std::string key = "#anon";
+    std::string seed = reseed("original seed");
 
     std::vector<std::string> filenames;
 
@@ -545,26 +578,30 @@ int run_ikpx(const std::vector<std::string> &arguments) {
         if (command == "") { continue; }
 
         if (command[0] == '-') {
-            if ((command == "-v") || (command == "--velocity")) {
-                velocity = arguments[++i];
+            if ((command == "-b") || (command == "--backup")) {
+                backup_duration = std::stoll(arguments[++i]);
             } else if ((command == "-d") || (command == "--directory")) {
                 directory = arguments[++i];
-            } else if ((command == "-b") || (command == "--backup")) {
-                backup_duration = std::stoll(arguments[++i]);
-            } else if ((command == "-k") || (command == "--lookahead")) {
-                lookahead = std::stoll(arguments[++i]);
+            } else if ((command == "-f") || (command == "--full-output")) {
+                full_output = true;
             } else if ((command == "-j") || (command == "--jumpahead")) {
                 jumpahead = std::stoll(arguments[++i]);
+            } else if ((command == "-k") || (command == "--key")) {
+                key = arguments[++i]; full_output = true;
+            } else if ((command == "-l") || (command == "--lookahead")) {
+                lookahead = std::stoll(arguments[++i]);
+            } else if ((command == "-m") || (command == "--minimum-depth")) {
+                minimum_depth = std::stoll(arguments[++i]);
+            } else if ((command == "-n") || (command == "--soups")) {
+                soups_per_haul = std::stoll(arguments[++i]);
+            } else if ((command == "-p") || (command == "--threads")) {
+                threads = std::stoll(arguments[++i]);
+            } else if ((command == "-v") || (command == "--velocity")) {
+                velocity = arguments[++i];
             } else if ((command == "-w") || (command == "--width")) {
                 width = std::stoll(arguments[++i]);
             } else if ((command == "-x") || (command == "--maximum-width")) {
                 maximum_width = std::stoll(arguments[++i]);
-            } else if ((command == "-m") || (command == "--minimum-depth")) {
-                minimum_depth = std::stoll(arguments[++i]);
-            } else if ((command == "-p") || (command == "--threads")) {
-                threads = std::stoll(arguments[++i]);
-            } else if ((command == "-f") || (command == "--full-output")) {
-                full_output = true;
             } else {
                 ERREXIT("unknown command: " << command);
             }
@@ -593,7 +630,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     apg::lifetree<uint32_t, BITPLANES> lt(LIFETREE_MEM);
 
     WorkQueue to_master;
-    semisearch hs(vel, 0, &lt, width, lookahead, jumpahead, minimum_depth, full_output);
+    semisearch hs(vel, 0, &lt, width, lookahead, jumpahead, minimum_depth, full_output, soups_per_haul);
 
     // load search tree:
     for (auto&& filename : filenames) { hs.load_file(filename); }
@@ -610,7 +647,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
 
     while (true) {
         bool last_iteration = (hs.search_width >= maximum_width);
-        master_loop(hs, to_master, directory, backup_duration, last_iteration, t1);
+        master_loop(hs, to_master, directory, backup_duration, last_iteration, t1, seed, key);
         hs.print_solver_stats();
         if (last_iteration) { break; }
         hs.adaptive_widen();
