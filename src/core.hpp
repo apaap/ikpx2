@@ -105,6 +105,8 @@ struct semisearch {
     bool full_output;
     double_heap<ikpx_map::iterator> heap;
     std::vector<PreferredSolver> solvers;
+    SoupSearcher globalSoup;
+    apg::base_classifier<BITPLANES> cfier;
 
     int staleness;
     int items_in_aether;
@@ -120,7 +122,10 @@ struct semisearch {
     semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead, uint32_t mindepth, bool full_output) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
         search_width(search_width), lookahead(lookahead), jumpahead(jumpahead),
-        mindepth(mindepth), full_output(full_output), heap(), solvers(2016) {
+        mindepth(mindepth), full_output(full_output), heap(), solvers(2016),
+        globalSoup(), cfier(lab, apg::get_all_rules()[0]) {
+
+        globalSoup.tilesProcessed = 0;
 
         search_width = 2;
         std::string rule = apg::get_all_rules()[0];
@@ -318,8 +323,8 @@ struct semisearch {
         }
 
         if (p.empty()) { return; }
-
-        if ((!complete) && (!full_output) && (tree.preds[p].depth <= record_depth)) { return; }
+        bool print_rle = complete || (tree.preds[p].depth > record_depth);
+        if ((!full_output) && (!print_rle)) { return; }
 
         auto pat = tree.materialise(lab, results);
 
@@ -335,31 +340,38 @@ struct semisearch {
             already_seen.insert(digest2);
         }
 
-        pat = ikpx2golly(pat, vel);
-        if (pat.empty()) { return; /* no xs0_0 please */ }
-
-        shadow = 0;
-        results.resize(n6);
-        for (auto&& x : results) { shadow |= x; }
-
-        int breadth = (shadow) ? (floor_log2(shadow) + 1 - __builtin_ctzll(shadow)) : 0;
-
-        if (complete) {
-            if (pat[vel.p](vel.hd, vel.vd) == pat) {
-                std::string apgcode = pat.apgcode();
-                std::cout << "\n#C completed spaceship: \033[34;1m" << apgcode << "\033[0m" << std::endl;
-                std::cout << "#C Catagolue URL: https://catagolue.hatsya.com/object/" << apgcode << "/" << pat.getrule() << std::endl;
-            } else {
-                std::cout << "\n#C completed tail" << std::endl;
-            }
-        } else if (!full_output) {
-            record_depth = tree.preds[p].depth;
-            std::cout << "\n#C depth = " << record_depth << std::endl;
+        if (full_output) {
+            auto phases = ikpx2phases(pat, vel);
         }
-        std::cout << "#C breadth = " << breadth << std::endl;
-        staleness = 24;
-        pat.write_rle(std::cout);
-        std::cout << std::endl;
+
+        if (print_rle) {
+
+            pat = ikpx2golly(pat, vel);
+            if (pat.empty()) { return; /* no xs0_0 please */ }
+
+            shadow = 0;
+            results.resize(n6);
+            for (auto&& x : results) { shadow |= x; }
+
+            int breadth = (shadow) ? (floor_log2(shadow) + 1 - __builtin_ctzll(shadow)) : 0;
+
+            if (complete) {
+                if (pat[vel.p](vel.hd, vel.vd) == pat) {
+                    std::string apgcode = pat.apgcode();
+                    std::cout << "\n#C completed spaceship: \033[34;1m" << apgcode << "\033[0m" << std::endl;
+                    std::cout << "#C Catagolue URL: https://catagolue.hatsya.com/object/" << apgcode << "/" << pat.getrule() << std::endl;
+                } else {
+                    std::cout << "\n#C completed tail" << std::endl;
+                }
+            } else {
+                record_depth = tree.preds[p].depth;
+                std::cout << "\n#C depth = " << record_depth << std::endl;
+            }
+            std::cout << "#C breadth = " << breadth << std::endl;
+            staleness = 24;
+            pat.write_rle(std::cout);
+            std::cout << std::endl;
+        }
     }
 
     void launch_thread(WorkQueue &to_master, int iters=1) {
@@ -562,7 +574,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
 
     std::cout << "# lookahead = " << lookahead << "; jumpahead = " << jumpahead << std::endl;
 
-    apg::lifetree<uint32_t, 1> lt(100);
+    apg::lifetree<uint32_t, BITPLANES> lt(LIFETREE_MEM);
 
     WorkQueue to_master;
     semisearch hs(vel, 0, &lt, width, lookahead, jumpahead, minimum_depth, full_output);
