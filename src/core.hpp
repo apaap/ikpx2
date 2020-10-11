@@ -342,6 +342,22 @@ struct semisearch {
 
         if (full_output) {
             auto phases = ikpx2phases(pat, vel);
+
+            for (auto&& phase : phases) {
+
+                if (phase.empty()) { continue; }
+
+                // create bitworld:
+                std::vector<apg::bitworld> vbw(1);
+                for (auto&& coord : phase) {
+                    vbw[0].setcell(coord.second, coord.first, 1);
+                }
+
+                // create seed:
+                std::string suffix = cells2seed(phase);
+
+                globalSoup.censusSoup("test", suffix, cfier, vbw);
+            }
         }
 
         if (print_rle) {

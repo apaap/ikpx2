@@ -95,7 +95,7 @@ apg::pattern ikpx2golly(apg::pattern &x, const Velocity &vel) {
     return golly;
 }
 
-std::string cells2rle(const std::set<std::pair<int32_t, int32_t>> &cells, const std::string &rule, bool isSeed) {
+std::string cells2seed(const std::set<std::pair<int32_t, int32_t>> &cells) {
 
     int32_t minx = 999999999;
     int32_t miny = 999999999;
@@ -111,13 +111,9 @@ std::string cells2rle(const std::set<std::pair<int32_t, int32_t>> &cells, const 
 
     std::ostringstream outstream;
 
-    if (isSeed) {
-        outstream << '-';
-    } else {
-        outstream << "x = " << (maxx - minx + 1) << ", y = " << (maxy - miny + 1) << ", rule = " << rule << std::endl;
-    }
+    outstream << '-';
 
-    apg::RleWriter rw(outstream, (isSeed ? '-' : '\n'), 66, 1);
+    apg::RleWriter rw(outstream, '-', 66, 1);
 
     for (auto&& cell : cells) {
         uint64_t y = cell.first - miny;
@@ -126,8 +122,6 @@ std::string cells2rle(const std::set<std::pair<int32_t, int32_t>> &cells, const 
     }
 
     rw.finalise();
-
-    if (isSeed) { outstream << std::endl; }
 
     return outstream.str();
 }
