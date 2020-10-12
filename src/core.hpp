@@ -295,6 +295,26 @@ struct semisearch {
         }
     }
 
+    void submit_haul(std::string &seed, const std::string &key) {
+        std::cout << "----------------------------------------------------------------------" << std::endl;
+        std::cout << "# " << soupsElapsed << " soups completed." << std::endl;
+        std::cout << "Attempting to contact payosha256." << std::endl;
+        std::string payoshaResponse = globalSoup.submitResults(key, seed, soupsElapsed, false, false);
+
+        if (payoshaResponse.length() == 0) {
+            std::cout << "Connection was unsuccessful." << std::endl;
+            maxcount += soupsPerHaul;
+        } else {
+            std::cout << "Connection was successful." << std::endl;
+            maxcount = soupsPerHaul;
+            soupsElapsed = 0;
+            SoupSearcher newSearcher;
+            globalSoup = newSearcher;
+            globalSoup.tilesProcessed = 0;
+            seed = reseed(seed);
+        }
+    }
+
     void inject_partial(u64seq &results, std::string &seed, const std::string &key) {
 
         u64seq p;
@@ -368,23 +388,7 @@ struct semisearch {
                 }
 
                 if (soupsElapsed >= maxcount) {
-                    std::cout << "----------------------------------------------------------------------" << std::endl;
-                    std::cout << "# " << soupsElapsed << " soups completed." << std::endl;
-                    std::cout << "Attempting to contact payosha256." << std::endl;
-                    std::string payoshaResponse = globalSoup.submitResults(key, seed, soupsElapsed, false, false);
-
-                    if (payoshaResponse.length() == 0) {
-                        std::cout << "Connection was unsuccessful." << std::endl;
-                        maxcount += soupsPerHaul;
-                    } else {
-                        std::cout << "Connection was successful." << std::endl;
-                        maxcount = soupsPerHaul;
-                        soupsElapsed = 0;
-                        SoupSearcher newSearcher;
-                        globalSoup = newSearcher;
-                        globalSoup.tilesProcessed = 0;
-                        seed = reseed(seed);
-                    }
+                    submit_haul(seed, key);
                 }
             }
         }
@@ -654,6 +658,10 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     }
 
     hs.join_threads();
+
+    if (full_output) {
+        hs.submit_haul(seed, key);
+    }
 
     return 0;
 
