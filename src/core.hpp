@@ -591,13 +591,15 @@ int run_ikpx(const std::vector<std::string> &arguments) {
             } else if ((command == "-j") || (command == "--jumpahead")) {
                 jumpahead = std::stoll(arguments[++i]);
             } else if ((command == "-k") || (command == "--key")) {
-                key = arguments[++i]; full_output = true;
+                key = arguments[++i];
+                full_output = true;
             } else if ((command == "-l") || (command == "--lookahead")) {
                 lookahead = std::stoll(arguments[++i]);
             } else if ((command == "-m") || (command == "--minimum-depth")) {
                 minimum_depth = std::stoll(arguments[++i]);
             } else if ((command == "-n") || (command == "--soups")) {
                 soups_per_haul = std::stoll(arguments[++i]);
+                full_output = true;
             } else if ((command == "-p") || (command == "--threads")) {
                 threads = std::stoll(arguments[++i]);
             } else if ((command == "-v") || (command == "--velocity")) {
