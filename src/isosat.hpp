@@ -442,7 +442,7 @@ struct MetaProblem {
 
         middle_bits = floor_log2(1 | (shadow << 1));
 
-        symmetric = (vel.hd == 0);
+        symmetric = (vel.hd == 0) || ((vel.jacobian[1] == vel.jacobian[3]) && (vel.jacobian[0] == -vel.jacobian[2]));
 
         if (symmetric && shadow) {
             for (auto&& x : initial_rows) {
