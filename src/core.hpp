@@ -296,6 +296,14 @@ struct semisearch {
     }
 
     void submit_haul(std::string &seed, const std::string &key) {
+
+        for (auto it = globalSoup.census.begin(); it != globalSoup.census.end(); ++it) {
+            // This is a workaround for the Catagolue limitation that no
+            // sample soups are recorded if the object occurs many times
+            // in a single haul:
+            if (it->second > 10) { it->second = 10; }
+        }
+
         std::cout << "----------------------------------------------------------------------" << std::endl;
         std::cout << "# " << soupsElapsed << " soups completed." << std::endl;
         std::cout << "Attempting to contact payosha256." << std::endl;
