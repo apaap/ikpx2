@@ -359,12 +359,16 @@ struct semisearch {
         if ((!full_output) && (!print_rle)) { return; }
 
         auto pat = tree.materialise(lab, results);
+        if (pat.empty()) { return; }
 
         {
+            // ensure canonical output phase:
             int64_t bbox[4];
-            pat.getrect(bbox);
+            pat.getrect(bbox); bbox[3] = 1;
+            pat.subrect(bbox).getrect(bbox);
+            pat = pat.shift(0 - bbox[0], 0 - bbox[1]);
 
-            uint64_t digest = pat.shift(0 - bbox[0], 0 - bbox[1]).digest();
+            uint64_t digest = pat.digest();
             uint64_t digest2 = complete ? (digest * 3ull) : digest;
 
             if (already_seen.count(digest2)) { return; }
@@ -391,7 +395,7 @@ struct semisearch {
                 globalSoup.censusSoup(seed, suffix, cfier, vbw);
                 soupsElapsed += 1;
 
-                if ((soupsElapsed % 1000) == 0) {
+                if ((soupsElapsed % 5000) == 0) {
                     std::cout << "# " << soupsElapsed << " soups completed." << std::endl;
                 }
 
