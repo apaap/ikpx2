@@ -29,7 +29,7 @@ void print_banner() {
 
 void print_help() {
 
-    std::cerr << "Incremental Knightship Partial Extender, version 2.0\n"
+    std::cerr << "Incremental Knightship Partial Extender, version 2.2\n"
                 "====================================================\n\n"
 
                 "Usage: ./ikpx2 -v VELOCITY [OTHER_OPTIONS...] [INPUT_FILES...]\n\n"
@@ -39,13 +39,16 @@ void print_help() {
                 "Options:\n"
 
                 "   -v, --velocity          specify the velocity, e.g. '(2,1)c/6' or 'c/5d'\n"
-                "   -k, --lookahead         number of logical rows by which to extend partials\n"
                 "   -p, --threads           number of CPU threads to use (default 8)\n"
+                "   -n, --soups             number of soups to upload in each haul to Catagolue\n"
+                "   -k, --key               payosha256 key to upload non-anonymously to Catagolue\n"
                 "   -d, --directory         existing directory in which to save backup files\n"
                 "   -b, --backup            number of seconds between adjacent backups\n"
                 "   -m, --minimum-depth     only search from this position onwards\n"
                 "   -w, --width             initial search width in logical columns\n"
                 "   -x, --maximum-width     terminate the program when this width is exhausted\n"
+                "   -l, --lookahead         number of logical rows by which to extend partials\n"
+                "   -j, --jumpahead         number of logical rows to jump forward in the search\n"
                 "   -h, --help              show this message and exit\n\n"
 
                 "The input files can be either RLEs or ikpx2 backups (of the same velocity!).\n\n"
