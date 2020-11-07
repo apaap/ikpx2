@@ -109,6 +109,8 @@ struct semisearch {
     apg::base_classifier<BITPLANES> cfier;
     int soupsPerHaul;
     int maxcount;
+    bool local_log;
+    bool testing;
 
     int soupsElapsed;
 
@@ -123,11 +125,13 @@ struct semisearch {
 
     std::unordered_set<uint64_t> already_seen;
 
-    semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead, uint32_t mindepth, bool full_output, int soupsPerHaul) :
+    semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead,
+                uint32_t mindepth, bool full_output, int soupsPerHaul, bool local_log, bool testing) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
         search_width(search_width), lookahead(lookahead), jumpahead(jumpahead),
         mindepth(mindepth), full_output(full_output), heap(), solvers(2016),
-        globalSoup(), cfier(lab, apg::get_all_rules()[0]), soupsPerHaul(soupsPerHaul), maxcount(soupsPerHaul) {
+        globalSoup(), cfier(lab, apg::get_all_rules()[0]), soupsPerHaul(soupsPerHaul),
+        maxcount(soupsPerHaul), local_log(local_log), testing(testing) {
 
         globalSoup.tilesProcessed = 0; soupsElapsed = 0;
 
@@ -307,7 +311,7 @@ struct semisearch {
         std::cout << "----------------------------------------------------------------------" << std::endl;
         std::cout << "# " << soupsElapsed << " soups completed." << std::endl;
         std::cout << "Attempting to contact payosha256." << std::endl;
-        std::string payoshaResponse = globalSoup.submitResults(key, seed, soupsElapsed, false, false);
+        std::string payoshaResponse = globalSoup.submitResults(key, seed, soupsElapsed, local_log, testing);
 
         if (payoshaResponse.length() == 0) {
             std::cout << "Connection was unsuccessful." << std::endl;
@@ -582,6 +586,8 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     int minimum_depth = 0;
     int soups_per_haul = 100000;
     bool full_output = false;
+    bool local_log = false;
+    bool testing = false;
 
     std::string key = "#anon";
     std::string seed = reseed("original seed");
@@ -605,6 +611,9 @@ int run_ikpx(const std::vector<std::string> &arguments) {
             } else if ((command == "-k") || (command == "--key")) {
                 key = arguments[++i];
                 full_output = true;
+            } else if ((command == "-L") || (command == "--local-log")) {
+                local_log = std::stoll(arguments[++i]);
+                if (local_log) { full_output = true; }
             } else if ((command == "-l") || (command == "--lookahead")) {
                 lookahead = std::stoll(arguments[++i]);
             } else if ((command == "-m") || (command == "--minimum-depth")) {
@@ -614,6 +623,9 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                 full_output = true;
             } else if ((command == "-p") || (command == "--threads")) {
                 threads = std::stoll(arguments[++i]);
+            } else if ((command == "-t") || (command == "--testing")) {
+                testing = std::stoll(arguments[++i]);
+                if (testing) { full_output = true; local_log = true; }
             } else if ((command == "-v") || (command == "--velocity")) {
                 velocity = arguments[++i];
             } else if ((command == "-w") || (command == "--width")) {
@@ -648,7 +660,8 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     apg::lifetree<uint32_t, BITPLANES> lt(LIFETREE_MEM);
 
     WorkQueue to_master;
-    semisearch hs(vel, 0, &lt, width, lookahead, jumpahead, minimum_depth, full_output, soups_per_haul);
+    semisearch hs(vel, 0, &lt, width, lookahead, jumpahead, minimum_depth,
+                    full_output, soups_per_haul, local_log, testing);
 
     // load search tree:
     for (auto&& filename : filenames) { hs.load_file(filename); }
