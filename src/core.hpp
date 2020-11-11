@@ -572,6 +572,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     }
 
     std::cerr << "sizeof(workitem) = " << sizeof(workitem) << std::endl;
+    std::cerr << "sizeof(iterator) = " << sizeof(ikpx_map::iterator) << std::endl;
 
     std::string velocity = "";
     std::string directory = ".";

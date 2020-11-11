@@ -25,7 +25,11 @@ struct flat_heap {
 
     T pop() {
 
-        while (contents[x].empty()) { x += 1; }
+        while (contents[x].empty()) {
+            std::vector<T> y;
+            contents[x].swap(y);
+            x += 1;
+        }
 
         T element = contents[x].back();
         contents[x].pop_back();
