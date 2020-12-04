@@ -345,6 +345,8 @@ struct semisearch {
 
         bool complete = false;
 
+        uint32_t attained_depth = 0;
+
         for (int i = 0; i < range; i++) {
             auto pc = inject(&(results[i]));
             if (pc.empty()) {
@@ -356,10 +358,12 @@ struct semisearch {
                 break;
             }
             p = pc;
+
+            if (i == 0) { attained_depth = tree.preds[p].depth; }
         }
 
         if (p.empty()) { return; }
-        bool print_rle = complete || (tree.preds[p].depth > record_depth);
+        bool print_rle = complete || (attained_depth > record_depth);
         if ((!full_output) && (!print_rle)) { return; }
 
         auto pat = tree.materialise(lab, results);
@@ -429,7 +433,7 @@ struct semisearch {
                     std::cout << "\n#C completed tail" << std::endl;
                 }
             } else {
-                record_depth = tree.preds[p].depth;
+                record_depth = attained_depth;
                 std::cout << "\n#C depth = " << record_depth << std::endl;
             }
             std::cout << "#C breadth = " << breadth << std::endl;
