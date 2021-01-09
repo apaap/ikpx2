@@ -487,6 +487,9 @@ void master_loop(semisearch &searcher, WorkQueue &to_master, std::string directo
         std::ostringstream ss;
         std::string rule = apg::get_all_rules()[0];
         ss << directory << "/backup_" << rule;
+
+        if (searcher.vel.jacobian[5] < 0) { ss << "_reversed"; }
+
         ss << "_velocity_" << searcher.vel.vd << "_" << searcher.vel.hd << "_" << searcher.vel.p;
         ss << "_width_" << searcher.search_width;
         checkpoint_names.push_back(ss.str() + "_odd.bin");
@@ -657,7 +660,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                                     vel.jacobian[2] << ", " << vel.jacobian[3] << "), (" <<
                                     vel.jacobian[4] << ", " << vel.jacobian[5] << ")]" << std::endl;
 
-    if (lookahead == 0) { lookahead = vel.jacobian[1] * 8 + 2; }
+    if (lookahead == 0) { lookahead = std::abs(vel.jacobian[1]) * 8 + 2; }
     if (jumpahead == 0) { jumpahead = lookahead >> 3; }
 
     std::cout << "# lookahead = " << lookahead << "; jumpahead = " << jumpahead << std::endl;

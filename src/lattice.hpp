@@ -131,6 +131,7 @@ struct Velocity {
 
     Velocity(const std::string &velocity) {
 
+        bool reverse = (velocity.find("-") != std::string::npos);
         bool diagonal = (velocity.find("d") != std::string::npos);
         std::vector<int64_t> ints;
 
@@ -154,6 +155,9 @@ struct Velocity {
         }
 
         jacobian = get_transformation(vd, hd, p);
+
+        if (reverse) { for (int i = 1; i < 6; i++) { jacobian[i] *= -1; } }
+
         det = inv2x2(jacobian, iacobjan);
     }
 
