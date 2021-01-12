@@ -103,7 +103,7 @@ struct semisearch {
     int jumpahead;
     uint32_t mindepth;
     bool full_output;
-    double_heap<ikpx_map::iterator> heap;
+    triple_heap<ikpx_map::iterator> heap;
     std::vector<PreferredSolver> solvers;
     SoupSearcher globalSoup;
     apg::base_classifier<BITPLANES> cfier;
@@ -174,7 +174,7 @@ struct semisearch {
             uint64_t shadow = 1;
             for (auto&& x : it->first) { shadow |= x; }
             size_t breadth = floor_log2(shadow);
-            heap.push(breadth, depth, it);
+            heap.push(xw, breadth, depth, it);
         }
 
         return true;
