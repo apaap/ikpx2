@@ -164,13 +164,13 @@ struct semisearch {
         std::cout << std::endl;
     }
 
-    bool enheap(ikpx_map::iterator it) {
+    bool enheap(ikpx_map::iterator it, uint32_t maxdepth = 0xffffffffu) {
 
         int xw = it->second.exhausted_width & 0x3fff;
         if (xw >= search_width) { return false; }
 
         size_t depth = it->second.depth;
-        if (depth >= mindepth) {
+        if ((depth >= mindepth) && (depth <= maxdepth)) {
             uint64_t shadow = 1;
             for (auto&& x : it->first) { shadow |= x; }
             size_t breadth = floor_log2(shadow);
@@ -210,14 +210,14 @@ struct semisearch {
         }
     }
 
-    void rundict() {
+    void rundict(uint32_t maxdepth) {
 
         std::vector<uint64_t> all_tasks;
         std::vector<uint64_t> unfinished_tasks;
 
         for (auto it = tree.preds.begin(); it != tree.preds.end(); ++it) {
             size_t depth = it->second.depth;
-            bool unfinished = enheap(it);
+            bool unfinished = enheap(it, maxdepth);
 
             if (depth >= all_tasks.size()) {
                 all_tasks.resize(depth + 1);
@@ -242,14 +242,14 @@ struct semisearch {
         enqueue_all();
     }
 
-    void adaptive_widen() {
+    void adaptive_widen(uint32_t maxdepth) {
 
         search_width += 1;
 
         std::cout << "# Adaptive widening to width " << search_width;
         std::cout << " (treesize = " << tree.preds.size() << ")" << std::endl;
 
-        rundict();
+        rundict(maxdepth);
     }
 
     u64seq inject(const uint64_t *fullseq) {
@@ -597,6 +597,8 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     bool local_log = false;
     bool testing = false;
 
+    uint32_t maxdepth = 0xffffffffu;
+
     std::string key = "#anon";
     std::string seed = reseed("original seed");
 
@@ -626,6 +628,8 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                 lookahead = std::stoll(arguments[++i]);
             } else if ((command == "-m") || (command == "--minimum-depth")) {
                 minimum_depth = std::stoll(arguments[++i]);
+            } else if ((command == "-M") || (command == "--maximum-depth")) {
+                maxdepth = std::stoll(arguments[++i]);
             } else if ((command == "-n") || (command == "--soups")) {
                 soups_per_haul = std::stoll(arguments[++i]);
                 full_output = true;
@@ -679,7 +683,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     hs.launch_thread(to_master, threads);
 
     // enqueue the work:
-    hs.rundict();
+    hs.rundict(maxdepth);
 
     // start backup timer:
     auto t1 = std::chrono::steady_clock::now();
@@ -689,7 +693,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
         master_loop(hs, to_master, directory, backup_duration, last_iteration, t1, seed, key);
         hs.print_solver_stats();
         if (last_iteration) { break; }
-        hs.adaptive_widen();
+        hs.adaptive_widen(maxdepth);
     }
 
     hs.join_threads();
