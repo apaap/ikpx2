@@ -69,8 +69,9 @@ std::vector<int> get_transformation(int vd, int hd, int p) {
 
     // Find the first lattice basis vector:
 
-    int du_dx =  vd / apg::euclid_gcd(vd, hd);
-    int du_dy = -hd / apg::euclid_gcd(vd, hd);
+    int vdhd = apg::euclid_gcd(vd, hd);
+    int du_dx =  vd / vdhd;
+    int du_dy = -hd / vdhd;
 
     // Find a second lattice basis vector:
 
