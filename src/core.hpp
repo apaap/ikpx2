@@ -245,6 +245,7 @@ struct semisearch {
     void adaptive_widen(uint32_t maxdepth) {
 
         search_width += 1;
+        record_depth = 0;
 
         std::cout << "# Adaptive widening to width " << search_width;
         std::cout << " (treesize = " << tree.preds.size() << ")" << std::endl;
