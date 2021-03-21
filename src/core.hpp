@@ -255,7 +255,7 @@ struct semisearch {
 
     u64seq inject(const uint64_t *fullseq) {
 
-        auto elem = tree.inject(fullseq);
+        auto elem = tree.inject(fullseq, 0);
         if (elem.empty()) { return elem; }
 
         auto it = tree.preds.find(elem);
@@ -270,7 +270,7 @@ struct semisearch {
         return elem;
     }
 
-    void load_file(std::string filename) {
+    void load_file(std::string filename, uint32_t minheight) {
 
         FILE* fptr = fopen(filename.c_str(), "rb");
 
@@ -295,7 +295,7 @@ struct semisearch {
             int n7 = ltransform(robin, vel, results);
 
             for (uint64_t i = 0; i < results.size(); i += n7) {
-                tree.inject(&(results[i]));
+                tree.inject(&(results[i]), minheight);
             }
         }
     }
@@ -599,6 +599,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     bool testing = false;
 
     uint32_t maxdepth = 0xffffffffu;
+    uint32_t minheight = 0;
 
     std::string key = "#anon";
     std::string seed = reseed("original seed");
@@ -617,6 +618,8 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                 directory = arguments[++i];
             } else if ((command == "-f") || (command == "--full-output")) {
                 full_output = true;
+            } else if ((command == "-g") || (command == "--graft")) {
+                minheight = std::stoll(arguments[++i]);
             } else if ((command == "-j") || (command == "--jumpahead")) {
                 jumpahead = std::stoll(arguments[++i]);
             } else if ((command == "-k") || (command == "--key")) {
@@ -677,7 +680,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                     full_output, soups_per_haul, local_log, testing);
 
     // load search tree:
-    for (auto&& filename : filenames) { hs.load_file(filename); }
+    for (auto&& filename : filenames) { hs.load_file(filename, minheight); }
     if (hs.tree.preds.size() == 0) { hs.tree.inject_base_element(); }
 
     // launch worker threads:

@@ -72,7 +72,7 @@ struct ikpxtree {
         return shadow ? v2 + 1 : 0;
     }
 
-    u64seq inject(const uint64_t *fullseq) {
+    u64seq inject(const uint64_t *fullseq, uint32_t minheight) {
 
         u64seq elem_upper(N); int upper = v2shift(fullseq, elem_upper);
         u64seq elem_lower(N); int lower = v2shift(fullseq + 1, elem_lower);
@@ -91,7 +91,11 @@ struct ikpxtree {
                     ps.depth = it->second.depth + 1;
                 }
             }
-            preds[elem_lower] = ps;
+            if (ps.depth >= minheight) {
+                preds[elem_lower] = ps;
+            } else {
+                elem_lower.clear();
+            }
         }
 
         // at this point, elem_lower is either empty or in the std::map
