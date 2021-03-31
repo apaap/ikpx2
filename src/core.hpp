@@ -346,8 +346,6 @@ struct semisearch {
 
         bool complete = false;
 
-        uint32_t attained_depth = 0;
-
         for (int i = 0; i < range; i++) {
             auto pc = inject(&(results[i]));
             if (pc.empty()) {
@@ -359,14 +357,12 @@ struct semisearch {
                 break;
             }
             p = pc;
-
-            if (i == 0) { attained_depth = tree.preds[p].depth; }
         }
 
         if (p.empty()) { return; }
+        uint32_t attained_depth = tree.preempt_depth(results);
         bool print_rle = complete || (attained_depth > record_depth);
         if ((!full_output) && (!print_rle)) { return; }
-
         auto pat = tree.materialise(lab, results);
         if (pat.empty()) { return; }
 

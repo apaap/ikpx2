@@ -156,6 +156,16 @@ struct ikpxtree {
         return (it2->second.exhausted_width >= currwidth + 0x4000);
     }
 
+    uint32_t preempt_depth(const u64seq &elements) const {
+
+        u64seq elem(N);
+        v2shift(elements.data(), elem);
+        auto it = preds.find(elem);
+        if (it == preds.end()) { return 0; }
+        return it->second.depth;
+
+    }
+
     apg::pattern materialise(lab32_t *lab, const u64seq &elements) const {
 
         u64seq elem(N);
