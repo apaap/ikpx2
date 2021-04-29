@@ -14,7 +14,7 @@ set -e
 echo "Updating submodules..."
 git submodule update --init --recursive
 
-if [ -f "solvers/libkissat.a" ]; then
+if [ -f "solvers/libkissat2.a" ]; then
 echo "libkissat.a already detected"
 else
 echo "Building kissat solver..."
@@ -23,10 +23,10 @@ cd kissat
 cd build
 make libkissat.a
 cd ../..
-cp "kissat/build/libkissat.a" solvers
+cp "kissat/build/libkissat.a" "solvers/libkissat2.a"
 fi
 
-if [ -f "solvers/libcadical.a" ]; then
+if [ -f "solvers/libcadical2.a" ]; then
 echo "libcadical.a already detected"
 else
 echo "Building cadical solver..."
@@ -35,7 +35,7 @@ cd cadical
 cd build
 make libcadical.a
 cd ../..
-cp "cadical/build/libcadical.a" solvers
+cp "cadical/build/libcadical.a" "solvers/libcadical2.a"
 fi
 
 echo "Configuring lifelib..."
@@ -48,6 +48,10 @@ else
     python mkparams.py $rulearg "ikpx2_stdin"
 fi
 cd ..
+
+echo "Gathering latest library versions..."
+cp solvers/libkissat2.a solvers/libkissat.a
+cp solvers/libcadical2.a solvers/libcadical.a
 
 echo "Compiling ikpx2..."
 sources="apgmera/includes/md5.cpp apgmera/includes/happyhttp.cpp src/main.cpp"
