@@ -26,16 +26,18 @@ cd ../..
 cp "kissat/build/libkissat.a" "solvers/libkissat2.a"
 fi
 
-if [ -f "solvers/libcadical2.a" ]; then
+if [ -f "solvers/libcadical3.a" ]; then
 echo "libcadical.a already detected"
 else
 echo "Building cadical solver..."
 cd cadical
 ./configure -s --competition
 cd build
+sed -i 's/class/#include <stddef.h>\nclass/g' ../src/reap.hpp
 make libcadical.a
+git checkout -- ../src/reap.hpp
 cd ../..
-cp "cadical/build/libcadical.a" "solvers/libcadical2.a"
+cp "cadical/build/libcadical.a" "solvers/libcadical3.a"
 fi
 
 echo "Configuring lifelib..."
@@ -51,7 +53,7 @@ cd ..
 
 echo "Gathering latest library versions..."
 cp solvers/libkissat2.a solvers/libkissat.a
-cp solvers/libcadical2.a solvers/libcadical.a
+cp solvers/libcadical3.a solvers/libcadical.a
 
 echo "Compiling ikpx2..."
 sources="apgmera/includes/md5.cpp apgmera/includes/happyhttp.cpp src/main.cpp"
