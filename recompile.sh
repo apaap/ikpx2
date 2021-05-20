@@ -33,7 +33,8 @@ echo "Building cadical solver..."
 cd cadical
 ./configure -s --competition
 cd build
-sed -i 's/class/#include <stddef.h>\nclass/g' ../src/reap.hpp
+cat ../src/reap.hpp | sed 's/class/#include <stddef.h>\nclass/g' > modified.hpp
+mv modified.hpp ../src/reap.hpp
 make libcadical.a
 git checkout -- ../src/reap.hpp
 cd ../..
