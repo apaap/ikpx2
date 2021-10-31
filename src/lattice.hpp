@@ -157,7 +157,7 @@ struct Velocity {
 
         jacobian = get_transformation(vd, hd, p);
 
-        if (reverse) { for (int i = 1; i < 6; i++) { jacobian[i] *= -1; } }
+        if (reverse) { for (int i = 1; i < 6; i += 2) { jacobian[i] *= -1; } }
 
         det = inv2x2(jacobian, iacobjan);
     }
