@@ -47,6 +47,11 @@ struct ikpxtree {
         N = header[0];
 
         for (uint64_t i = 0; i < header[1]; i++) {
+
+            if ((i > 0) && ((i & 0x3fffff) == 0)) {
+                std::cout << "# loaded " << i << " of " << header[1] << " nodes." << std::endl;
+            }
+
             u64seq u(N);
             predstruct ps;
             fread(&ps, 16, 1, fptr);
