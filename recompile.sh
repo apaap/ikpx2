@@ -14,7 +14,7 @@ set -e
 echo "Updating submodules..."
 git submodule update --init --recursive
 
-if [ -f "solvers/libkissat2.a" ]; then
+if [ -f "solvers/libkissat3.a" ]; then
 echo "libkissat.a already detected"
 else
 echo "Building kissat solver..."
@@ -23,7 +23,7 @@ cd kissat
 cd build
 make libkissat.a
 cd ../..
-cp "kissat/build/libkissat.a" "solvers/libkissat2.a"
+cp "kissat/build/libkissat.a" "solvers/libkissat3.a"
 fi
 
 if [ -f "solvers/libcadical3.a" ]; then
@@ -53,7 +53,7 @@ fi
 cd ..
 
 echo "Gathering latest library versions..."
-cp solvers/libkissat2.a solvers/libkissat.a
+cp solvers/libkissat3.a solvers/libkissat.a
 cp solvers/libcadical3.a solvers/libcadical.a
 
 echo "Compiling ikpx2..."
