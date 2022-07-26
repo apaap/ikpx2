@@ -26,7 +26,7 @@ cd ../..
 cp "kissat/build/libkissat.a" "solvers/libkissat3.a"
 fi
 
-if [ -f "solvers/libcadical3.a" ]; then
+if [ -f "solvers/libcadical4.a" ]; then
 echo "libcadical.a already detected"
 else
 echo "Building cadical solver..."
@@ -38,7 +38,7 @@ mv modified.hpp ../src/reap.hpp
 make libcadical.a
 git checkout -- ../src/reap.hpp
 cd ../..
-cp "cadical/build/libcadical.a" "solvers/libcadical3.a"
+cp "cadical/build/libcadical.a" "solvers/libcadical4.a"
 fi
 
 echo "Configuring lifelib..."
@@ -54,7 +54,7 @@ cd ..
 
 echo "Gathering latest library versions..."
 cp solvers/libkissat3.a solvers/libkissat.a
-cp solvers/libcadical3.a solvers/libcadical.a
+cp solvers/libcadical4.a solvers/libcadical.a
 
 echo "Compiling ikpx2..."
 sources="apgmera/includes/md5.cpp apgmera/includes/happyhttp.cpp src/main.cpp"
