@@ -26,21 +26,6 @@ cd ../..
 cp "kissat_extras/build/libkissat.a" "solvers/libkissat4.a"
 fi
 
-if [ -f "solvers/libcadical4.a" ]; then
-echo "libcadical.a already detected"
-else
-echo "Building cadical solver..."
-cd cadical
-./configure -s --competition
-cd build
-cat ../src/reap.hpp | sed 's/class/#include <stddef.h>\nclass/g' > modified.hpp
-mv modified.hpp ../src/reap.hpp
-make libcadical.a
-git checkout -- ../src/reap.hpp
-cd ../..
-cp "cadical/build/libcadical.a" "solvers/libcadical4.a"
-fi
-
 echo "Configuring lifelib..."
 cd apgmera
 if command -v "python3" &>/dev/null; then
@@ -54,10 +39,9 @@ cd ..
 
 echo "Gathering latest library versions..."
 cp solvers/libkissat4.a solvers/libkissat.a
-cp solvers/libcadical4.a solvers/libcadical.a
 
 echo "Compiling ikpx2..."
 sources="apgmera/includes/md5.cpp apgmera/includes/happyhttp.cpp src/main.cpp"
-g++ -O3 -Wall -Wextra -march=native --std=c++11 -Lsolvers $sources -lkissat -lcadical -pthread -o ikpx2 -g
+g++ -O3 -Wall -Wextra -march=native --std=c++11 -Lsolvers $sources -lkissat -pthread -o ikpx2 -g
 
 printf "\n\033[32;1m **** build process completed successfully **** \033[0m\n"
