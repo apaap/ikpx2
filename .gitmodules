@@ -7,3 +7,6 @@
 [submodule "apgmera"]
 	path = apgmera
 	url = https://gitlab.com/apgoucher/apgmera.git
+[submodule "kissat_extras"]
+	path = kissat_extras
+	url = https://github.com/jix/kissat_extras.git

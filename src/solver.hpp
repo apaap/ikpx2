@@ -1,12 +1,12 @@
 #pragma once
 
-#define SOLVER_CADICAL 1
+// #define SOLVER_CADICAL 1
 #define SOLVER_KISSAT 2
 
 // ------------------------------------
 
 extern "C" {
-#include "../kissat/src/kissat.h"
+#include "../kissat_extras/src/kissat.h"
 
 #ifdef SOLVER_CADICAL
 #include "../cadical/src/ccadical.h"
@@ -62,7 +62,7 @@ int multisolve(std::vector<int> &cnf, int solver_idx, const std::vector<int> &un
 
     int res = 0;
 
-    #ifdef SOLVER_KISSAT
+    #if 0
     if (solver_idx == SOLVER_KISSAT) {
 
         size_t origsize = cnf.size();
@@ -110,40 +110,42 @@ int multisolve(std::vector<int> &cnf, int solver_idx, const std::vector<int> &un
     }
     #endif
 
-    #ifdef SOLVER_CADICAL
-    if (solver_idx == SOLVER_CADICAL) {
+    {
 
-        auto solver = ccadical_init();
+        auto solver = kissat_init();
 
         for (auto&& x : cnf) {
-            ccadical_add(solver, x);
+            kissat_add(solver, x);
         }
 
         for (auto&& x : zero_literals) {
-            ccadical_assume(solver, -x);
+            kissat_assume(solver, -x);
         }
 
         bool zero_run = true;
 
         do {
 
-            ccadical_limit(solver, "decisions", max_decisions);
-            res = ccadical_solve(solver);
+            if (max_decisions > 0) {
+                kissat_set_decision_limit(solver, max_decisions);
+            }
+
+            res = kissat_solve(solver);
             if (res == 0) {
-                std::cerr << "\033[33;1mWarning:\033[0m SAT solver 'cadical' reached decision limit" << std::endl;
+                std::cerr << "\033[33;1mWarning:\033[0m SAT solver 'ikissat' reached decision limit" << std::endl;
             } else if (res == 10) {
                 std::vector<int> solution;
                 solution.push_back(res);
                 // include satisfying assignments:
                 for (int i = 1; i <= literals_to_return; i++) {
-                    solution.push_back(ccadical_val(solver, i));
+                    solution.push_back(kissat_value(solver, i));
                 }
                 for (auto&& x : unique_literals) {
                     if (solution[x]) {
-                        ccadical_add(solver, -solution[x]);
+                        kissat_add(solver, -solution[x]);
                     }
                 }
-                ccadical_add(solver, 0);
+                kissat_add(solver, 0);
                 lambda(solution);
             }
 
@@ -151,9 +153,8 @@ int multisolve(std::vector<int> &cnf, int solver_idx, const std::vector<int> &un
 
         } while (res == 10);
 
-        ccadical_release(solver);
+        kissat_release(solver);
     }
-    #endif
 
     return res;
 }
