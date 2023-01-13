@@ -171,10 +171,10 @@ struct semisearch {
 
         size_t depth = it->second.depth;
         if ((depth >= mindepth) && (depth <= maxdepth)) {
-            uint64_t shadow = 1;
-            for (auto&& x : it->first) { shadow |= x; }
-            size_t breadth = floor_log2(shadow);
-            heap.push(xw, breadth, depth, it);
+	    size_t shadow = 1;
+	    size_t weight = 0;
+            for (auto&& x : it->first) { shadow |= x; weight += __builtin_popcountll(x); }
+            heap.push(1, xw + floor_log2(shadow) + weight, depth, it);
         }
 
         return true;
@@ -182,7 +182,7 @@ struct semisearch {
 
     void enqueue_all() {
 
-        int ideal_items = 10 * workers.size();
+        int ideal_items = 1000 * workers.size();
 
         while ((items_in_aether < ideal_items) && (heap.elements > 0)) {
 

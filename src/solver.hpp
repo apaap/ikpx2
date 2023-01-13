@@ -25,7 +25,7 @@ const static int SOLVER_MASK =
 #include <iostream>
 #include <vector>
 
-std::vector<int> solve_using_kissat(const std::vector<int> &cnf, int literals_to_return, int max_decisions=10000000) {
+std::vector<int> solve_using_kissat(const std::vector<int> &cnf, int literals_to_return, int max_decisions=100000000) {
 
     auto solver = kissat_init();
     std::vector<int> solution;
@@ -58,7 +58,7 @@ std::vector<int> solve_using_kissat(const std::vector<int> &cnf, int literals_to
 template<typename Fn>
 int multisolve(std::vector<int> &cnf, int solver_idx, const std::vector<int> &unique_literals,
                 const std::vector<int> &zero_literals, int literals_to_return, Fn lambda,
-                int max_decisions=10000000) {
+                int max_decisions=100000000) {
 
     int res = 0;
 
