@@ -5,7 +5,7 @@ before_script:
     - git submodule sync --recursive
     - git submodule update --init --recursive
     - apt-get update -qy
-    - apt-get install -y g++ make
+    - apt-get install -y g++ make jq
 
 test:
     image: python:3.8
