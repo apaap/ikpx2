@@ -276,7 +276,7 @@ struct SubProblem {
     }
 
     template<typename Fn>
-    int find_all_solutions(Fn lambda, int solver_idx) {
+    int find_all_solutions(Fn lambda) {
 
         if (impossible) { return 20; }
 
@@ -292,7 +292,7 @@ struct SubProblem {
             }
         }
 
-        return multisolve(cnf, solver_idx, unique_literals, zero_literals, fullwidth * fullheight, [&](std::vector<int> &solution) {
+        return multisolve(cnf, unique_literals, zero_literals, fullwidth * fullheight, [&](std::vector<int> &solution) {
 
             lambda(sol2res(solution));
 
@@ -519,7 +519,7 @@ struct MetaProblem {
 
         auto start = std::chrono::high_resolution_clock::now();
 
-        int res = sp.find_all_solutions(lambda, solver_idx);
+        int res = sp.find_all_solutions(lambda);
 
         auto end = std::chrono::high_resolution_clock::now();
 
