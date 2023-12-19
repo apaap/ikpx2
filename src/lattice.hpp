@@ -2,6 +2,7 @@
 
 #include "../apgmera/lifelib/hashtrees/numtheory.h"
 #include "../apgmera/lifelib/ssplit.h"
+#include "maths.hpp"
 #include <iostream>
 #include <cmath>
 
@@ -10,6 +11,7 @@
 
 typedef std::vector<uint64_t> u64seq;
 
+typedef std::vector<uint128_t> u128seq;
 
 int signedinc(int x) {
     if (x == 0) {

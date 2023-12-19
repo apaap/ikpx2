@@ -13,7 +13,7 @@
 
 struct workitem {
 
-    u64seq initial_rows;
+    u128seq initial_rows;
     int16_t exhausted_width;
     int16_t maximum_width;
     int16_t lookahead;
@@ -61,7 +61,7 @@ void worker_loop(worker_loop_obj *obj) {
         do {
 
             int x = mp.find_all_solutions(item.maximum_width,
-                prime_implicants, item.lookahead, [&](const u64seq &svec) {
+                prime_implicants, item.lookahead, [&](const u128seq &svec) {
 
                 workitem item2;
 
@@ -123,13 +123,18 @@ struct semisearch {
     std::vector<NativeThread> workers;
     std::vector<worker_loop_obj*> wpointers;
 
-    std::unordered_set<uint64_t> already_seen;
-
+    std::unordered_set<uint128_t> already_seen;
+	
+	// Required size of vector "solvers" determined by cantor_pairs(a, b)
+	// Currently sized according to maximum search_width. It could be sized conservatively 
+	// and resized with each adaptive widening, but pointer reference to vector doesn't seem to like
+	// the underlying vector being resized.
+	// These shenanigans are probably unnecessary now that kissat is only SAT solver.
     semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead,
-                uint32_t mindepth, bool full_output, int soupsPerHaul, bool local_log, bool testing) :
+                uint32_t mindepth, bool full_output, int soupsPerHaul, bool local_log, bool testing, int maximum_width) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
         search_width(search_width), lookahead(lookahead), jumpahead(jumpahead),
-        mindepth(mindepth), full_output(full_output), heap(), solvers(2016),
+        mindepth(mindepth), full_output(full_output), heap(), solvers((maximum_width+3)*(maximum_width+4)/2), 
         globalSoup(), cfier(lab, apg::get_all_rules()[0]), soupsPerHaul(soupsPerHaul),
         maxcount(soupsPerHaul), local_log(local_log), testing(testing) {
 
@@ -171,9 +176,13 @@ struct semisearch {
 
         size_t depth = it->second.depth;
         if ((depth >= mindepth) && (depth <= maxdepth)) {
-	    size_t shadow = 1;
-	    size_t weight = 0;
-            for (auto&& x : it->first) { shadow |= x; weight += __builtin_popcountll(x); }
+			uint128_t shadow = 1;
+			size_t weight = 0;
+            for (auto&& x : it->first) {
+				shadow |= x;
+				weight += __builtin_popcountll(x);
+				weight += __builtin_popcountll(x>>64);
+			}
             heap.push(1, xw + floor_log2(shadow) + weight, depth, it);
         }
 
@@ -250,10 +259,12 @@ struct semisearch {
         std::cout << "# Adaptive widening to width " << search_width;
         std::cout << " (treesize = " << tree.preds.size() << ")" << std::endl;
 
-        rundict(maxdepth);
+        //solvers.resize((search_width+3)*(search_width+4)/2);
+		
+		rundict(maxdepth);
     }
 
-    u64seq inject(const uint64_t *fullseq) {
+    u128seq inject(const uint128_t *fullseq) {
 
         auto elem = tree.inject(fullseq, 0);
         if (elem.empty()) { return elem; }
@@ -291,7 +302,7 @@ struct semisearch {
             fclose(fptr);
 
             apg::pattern robin(lab, filename);
-            std::vector<uint64_t> results;
+            std::vector<uint128_t> results;
             int n7 = ltransform(robin, vel, results);
 
             for (uint64_t i = 0; i < results.size(); i += n7) {
@@ -328,13 +339,13 @@ struct semisearch {
         }
     }
 
-    void inject_partial(u64seq &results, std::string &seed, const std::string &key) {
+    void inject_partial(u128seq &results, std::string &seed, const std::string &key) {
 
-        u64seq p;
+        u128seq p;
 
         int range = jumpahead;
         int n6 = vel.vradius() * 2;
-        uint64_t shadow = 0;
+        uint128_t shadow = 0;
 
         for (size_t i = results.size() - n6; i < results.size(); i++) {
             shadow |= results[i];
@@ -373,8 +384,8 @@ struct semisearch {
             pat.subrect(bbox).getrect(bbox);
             pat = pat.shift(0 - bbox[0], 0 - bbox[1]);
 
-            uint64_t digest = pat.digest();
-            uint64_t digest2 = complete ? (digest * 3ull) : digest;
+            uint128_t digest = pat.digest();
+            uint128_t digest2 = complete ? (digest * 3ull) : digest;
 
             if (already_seen.count(digest2)) { return; }
             already_seen.insert(digest);
@@ -419,7 +430,17 @@ struct semisearch {
             results.resize(n6);
             for (auto&& x : results) { shadow |= x; }
 
-            int breadth = (shadow) ? (floor_log2(shadow) + 1 - __builtin_ctzll(shadow)) : 0;
+            int breadth = 0;
+			if (shadow) {
+				uint64_t shadow64 = shadow;
+				int v2 = 0;
+				if (shadow64 == 0) {
+					v2 = 64;
+					shadow64 = shadow >> 64;
+				}
+				v2 += __builtin_ctzll(shadow64);
+				breadth = (floor_log2(shadow) + 1 - v2);
+			}
 
             if (complete) {
                 if (pat[vel.p](vel.hd, vel.vd) == pat) {
@@ -583,10 +604,10 @@ int run_ikpx(const std::vector<std::string> &arguments) {
 
     // DEFAULTS:
     int width = 3;
-    int maximum_width = 60;
+    int maximum_width = 96;
     int lookahead = 0;
     int jumpahead = 0;
-    int backup_duration = 3600;
+    int backup_duration = 900;
     int threads = 8;
     int minimum_depth = 0;
     int soups_per_haul = 100000;
@@ -600,7 +621,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
     std::string key = "#anon";
     std::string seed = reseed("original seed");
 
-    std::vector<std::string> filenames;
+    // std::vector<std::string> filenames;
 
     for (size_t i = 0; i < arguments.size(); i++) {
 
@@ -648,7 +669,7 @@ int run_ikpx(const std::vector<std::string> &arguments) {
                 ERREXIT("unknown command: " << command);
             }
         } else {
-            filenames.push_back(command);
+            // filenames.push_back(command);
         }
     }
 
@@ -673,10 +694,10 @@ int run_ikpx(const std::vector<std::string> &arguments) {
 
     WorkQueue to_master;
     semisearch hs(vel, 0, &lt, width, lookahead, jumpahead, minimum_depth,
-                    full_output, soups_per_haul, local_log, testing);
+                    full_output, soups_per_haul, local_log, testing, maximum_width);
 
     // load search tree:
-    for (auto&& filename : filenames) { hs.load_file(filename, minheight); }
+    // for (auto&& filename : filenames) { hs.load_file(filename, minheight); }
     if (hs.tree.preds.size() == 0) { hs.tree.inject_base_element(); }
 
     // launch worker threads:

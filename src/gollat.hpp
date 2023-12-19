@@ -127,7 +127,7 @@ std::string cells2seed(const std::set<std::pair<int32_t, int32_t>> &cells) {
 }
 
 
-int extract_rows(apg::pattern &ikpx, const Velocity &vel, const std::vector<int> &truthtab, std::vector<uint64_t> &results) {
+int extract_rows(apg::pattern &ikpx, const Velocity &vel, const std::vector<int> &truthtab, std::vector<uint128_t> &results) {
 
     int hradius = vel.hradius();
     int vradius = vel.vradius();
@@ -191,7 +191,7 @@ int extract_rows(apg::pattern &ikpx, const Velocity &vel, const std::vector<int>
             slice = slice(0 - bbox[0], vradius - j);
 
             for (int k = 0; k <= vradius*2; k++) {
-                uint64_t row = 0;
+                uint128_t row = 0;
                 for (int i = 0; i < bbox[2]; i++) {
                     row |= slice.getcell(i, k) << i;
                 }
@@ -204,7 +204,7 @@ int extract_rows(apg::pattern &ikpx, const Velocity &vel, const std::vector<int>
 
 }
 
-int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint64_t> &results) {
+int ltransform(apg::pattern &x, const Velocity &vel, std::vector<uint128_t> &results) {
 
     apg::pattern ikpx = golly2ikpx(x, vel);
     std::vector<int> truthtab = truth_table_for_rule(x.getlab(), x.getrule());

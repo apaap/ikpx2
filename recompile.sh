@@ -42,6 +42,6 @@ cp solvers/libkissat4.a solvers/libkissat.a
 
 echo "Compiling ikpx2..."
 sources="apgmera/includes/md5.cpp apgmera/includes/happyhttp.cpp src/main.cpp"
-g++ -O3 -Wall -Wextra -march=native --std=c++11 -Lsolvers $sources -lkissat -pthread -o ikpx2 -g
+g++ -O0 -Wall -Wextra -march=native --std=c++20 -Lsolvers $sources -lkissat -pthread -o ikpx2 -g
 
 printf "\n\033[32;1m **** build process completed successfully **** \033[0m\n"

@@ -15,7 +15,7 @@ struct PreferredSolver {
 
     std::vector<std::atomic<uint64_t>> timings;
 
-    PreferredSolver() : timings(1 + floor_log2(SOLVER_MASK)) { }
+    PreferredSolver() : timings(1 + floor_log2((uint64_t)SOLVER_MASK)) { }
 
     double get_loss(int i) const {
 
@@ -68,6 +68,16 @@ struct PreferredSolver {
         }
 
         return idx;
+    }
+
+    int choose(const u128seq &seed) const {
+
+        u64seq seed64;
+        for (auto&& x : seed) {
+            seed64.push_back((uint64_t)x ^ (uint64_t)(x >> 64));
+        }
+
+        return choose(seed64);;
     }
 
     void update(int solver_idx, uint64_t micros) {
@@ -236,14 +246,14 @@ struct SubProblem {
 
     }
 
-    u64seq sol2res(const std::vector<int> &solution) const {
+    u128seq sol2res(const std::vector<int> &solution) const {
 
-        u64seq res;
+        u128seq res;
 
         if (solution[0] != 10) { return res; }
 
         for (int j = 0; j < fullheight; j++) {
-            uint64_t x = 0;
+            uint128_t x = 0;
             for (int i = hdiam; i < fullwidth - hdiam; i++) {
                 if (solution[coords2var(i, j)] > 0) {
                     x |= (1ull << (i - hdiam));
@@ -255,7 +265,7 @@ struct SubProblem {
         return res;
     }
 
-    void avoid(uint64_t row) {
+    void avoid(uint128_t row) {
 
         for (int i = hdiam; i < fullwidth - hdiam; i++) {
             if ((row >> (i - hdiam)) & 1) {
@@ -267,9 +277,9 @@ struct SubProblem {
         cnf.push_back(0);
     }
 
-    u64seq solve() const {
+    u128seq solve() const {
 
-        if (impossible) { u64seq x; return x; }
+        if (impossible) { u128seq x; return x; }
 
         auto solution = solve_using_kissat(cnf, fullwidth * fullheight);
         return sol2res(solution);
@@ -407,7 +417,7 @@ struct SubProblem {
         }
     }
 
-    void input_row(uint64_t row, int j, int lpad, int middle_bits) {
+    void input_row(uint128_t row, int j, int lpad, int middle_bits) {
 
         for (int i = hdiam; i < fullwidth - hdiam; i += 1) {
 
@@ -424,7 +434,7 @@ struct SubProblem {
 struct MetaProblem {
 
     // input parameters:
-    u64seq initial_rows;
+    u128seq initial_rows;
     Velocity vel;
     bool reverse;
 
@@ -434,7 +444,7 @@ struct MetaProblem {
     int middle_bits;
     uint64_t shadow;
 
-    MetaProblem(const u64seq &initial_rows, const Velocity &vel, bool reverse=false) :
+    MetaProblem(const u128seq &initial_rows, const Velocity &vel, bool reverse=false) :
         initial_rows(initial_rows), vel(vel), reverse(reverse) {
 
         shadow = 0;
@@ -446,7 +456,7 @@ struct MetaProblem {
 
         if (symmetric && shadow) {
             for (auto&& x : initial_rows) {
-                symmetric = symmetric && (x == (uint64_reverse(x) >> (64 - middle_bits)));
+                symmetric = symmetric && (x == (uint128_reverse(x) >> (128 - middle_bits)));
             }
         }
 
@@ -539,16 +549,16 @@ struct MetaProblem {
         bool gave_up = false;
         int subproblems = 0;
         int max_width = curr_width;
-        if (max_width > 64) { max_width = 64; }
+        if (max_width > 128) { max_width = 128; }
         int maxlpad = (shadow ? max_width : 0) - middle_bits;
 
-        std::vector<uint64_t> last_seen;
+        std::vector<uint128_t> last_seen;
 
         // asymmetric subproblems:
         for (int lpad = maxlpad; lpad >= 0; lpad--) {
 
             {
-                std::vector<uint64_t> halved;
+                std::vector<uint128_t> halved;
                 for (auto&& x : last_seen) {
                     if ((x & 1) == 0) { halved.push_back(x >> 1); }
                 }
@@ -560,7 +570,7 @@ struct MetaProblem {
 
             for (auto&& x : last_seen) { sp.avoid(x); }
 
-            if (find_multiple_solutions(sp, [&](const u64seq &solution) {
+            if (find_multiple_solutions(sp, [&](const u128seq &solution) {
 
                 last_seen.push_back(solution[sp.vdiam]);
                 lambda(solution);
@@ -569,9 +579,9 @@ struct MetaProblem {
             subproblems += 1;
         }
 
-        if (max_width > 32) { max_width = 32; }
+        if (max_width > 64) { max_width = 64; }
 
-        if (max_width <= 31) {
+        if (max_width <= 63) {
             // gutter-symmetric subproblems:
             if (gutter_symmetric) {
 
@@ -586,7 +596,7 @@ struct MetaProblem {
             }
         }
 
-        if (curr_width <= 62) {
+        if (curr_width <= 124) {
             // symmetric subproblems:
             if (symmetric) {
 
