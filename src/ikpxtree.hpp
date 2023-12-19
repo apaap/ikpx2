@@ -70,14 +70,14 @@ struct ikpxtree {
         for (int i = 0; i < N; i++) {
             shadow |= seq[i];
         }
-		
+        
         int v2 = 0;
-		uint64_t shadow64 = shadow;
-		if (shadow64 == 0) {
-			v2 = 64;
-			shadow64 = shadow >> 64;
-		}
-		v2 += shadow64 ? __builtin_ctzll(shadow64) : 64;
+        uint64_t shadow64 = shadow;
+        if (shadow64 == 0) {
+            v2 = 64;
+            shadow64 = shadow >> 64;
+        }
+        v2 += shadow64 ? __builtin_ctzll(shadow64) : 64;
 
         for (int i = 0; i < N; i++) {
             output[i] = seq[i] >> v2;

@@ -124,12 +124,12 @@ struct semisearch {
     std::vector<worker_loop_obj*> wpointers;
 
     std::unordered_set<uint128_t> already_seen;
-	
-	// Required size of vector "solvers" determined by cantor_pairs(a, b)
-	// Currently sized according to maximum search_width. It could be sized conservatively 
-	// and resized with each adaptive widening, but pointer reference to vector doesn't seem to like
-	// the underlying vector being resized.
-	// These shenanigans are probably unnecessary now that kissat is only SAT solver.
+    
+    // Required size of vector "solvers" determined by cantor_pairs(a, b)
+    // Currently sized according to maximum search_width. It could be sized conservatively 
+    // and resized with each adaptive widening, but pointer reference to vector doesn't seem to like
+    // the underlying vector being resized.
+    // These shenanigans are probably unnecessary now that kissat is only SAT solver.
     semisearch(const Velocity &vel, int direction, lab32_t *lab, int search_width, int lookahead, int jumpahead,
                 uint32_t mindepth, bool full_output, int soupsPerHaul, bool local_log, bool testing, int maximum_width) :
         vel(vel), tree(vel.vradius() * 2), direction(direction), lab(lab),
@@ -176,13 +176,13 @@ struct semisearch {
 
         size_t depth = it->second.depth;
         if ((depth >= mindepth) && (depth <= maxdepth)) {
-			uint128_t shadow = 1;
-			size_t weight = 0;
+            uint128_t shadow = 1;
+            size_t weight = 0;
             for (auto&& x : it->first) {
-				shadow |= x;
-				weight += __builtin_popcountll(x);
-				weight += __builtin_popcountll(x>>64);
-			}
+                shadow |= x;
+                weight += __builtin_popcountll(x);
+                weight += __builtin_popcountll(x>>64);
+            }
             heap.push(1, xw + floor_log2(shadow) + weight, depth, it);
         }
 
@@ -260,8 +260,8 @@ struct semisearch {
         std::cout << " (treesize = " << tree.preds.size() << ")" << std::endl;
 
         //solvers.resize((search_width+3)*(search_width+4)/2);
-		
-		rundict(maxdepth);
+        
+        rundict(maxdepth);
     }
 
     u128seq inject(const uint128_t *fullseq) {
@@ -431,16 +431,16 @@ struct semisearch {
             for (auto&& x : results) { shadow |= x; }
 
             int breadth = 0;
-			if (shadow) {
-				uint64_t shadow64 = shadow;
-				int v2 = 0;
-				if (shadow64 == 0) {
-					v2 = 64;
-					shadow64 = shadow >> 64;
-				}
-				v2 += __builtin_ctzll(shadow64);
-				breadth = (floor_log2(shadow) + 1 - v2);
-			}
+            if (shadow) {
+                uint64_t shadow64 = shadow;
+                int v2 = 0;
+                if (shadow64 == 0) {
+                    v2 = 64;
+                    shadow64 = shadow >> 64;
+                }
+                v2 += __builtin_ctzll(shadow64);
+                breadth = (floor_log2(shadow) + 1 - v2);
+            }
 
             if (complete) {
                 if (pat[vel.p](vel.hd, vel.vd) == pat) {
